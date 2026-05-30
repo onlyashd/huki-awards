@@ -1,0 +1,56 @@
+[versions]
+kotlin = "2.1.0"
+compose-plugin = "1.7.3"
+ktor = "3.0.3"
+kotlinx-serialization = "1.7.3"
+postgresql = "42.7.3"
+exposed = "0.50.0"
+sentry-backend = "8.41.0"
+sentry-kmp-client = "0.26.0"
+napier = "2.7.1"
+buildkonfig = "0.15.2"
+coil = "3.0.0-rc01"
+kotlinx-datetime = "0.6.1"
+
+[libraries]
+# --- Shared Core & Client Networking ---
+kotlinx-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "kotlinx-datetime" }
+kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinx-serialization" }
+ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
+ktor-client-js = { module = "io.ktor:ktor-client-js", version.ref = "ktor" }
+ktor-client-content-negotiation = { module = "io.ktor:ktor-client-content-negotiation", version.ref = "ktor" }
+ktor-serialization-kotlinx-json = { module = "io.ktor:ktor-serialization-kotlinx-json", version.ref = "ktor" }
+ktor-cors = { module = "io.ktor:ktor-server-cors", version.ref = "ktor" }
+ktor-client-jvm = { module = "io.ktor:ktor-client-okhttp-jvm", version.ref = "ktor" }
+coil = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coil" }
+coil-network = { module = "io.coil-kt.coil3:coil-network-ktor3", version.ref = "coil" }
+
+# --- Backend Server (Ktor & Database) ---
+ktor-server-core = { module = "io.ktor:ktor-server-core", version.ref = "ktor" }
+ktor-server-netty = { module = "io.ktor:ktor-server-netty", version.ref = "ktor" }
+ktor-server-auth = { module = "io.ktor:ktor-server-auth", version.ref = "ktor" }
+ktor-server-auth-jwt = { module = "io.ktor:ktor-server-auth-jwt", version.ref = "ktor" }
+ktor-server-content-negotiation = { module = "io.ktor:ktor-server-content-negotiation", version.ref = "ktor" }
+postgresql = { module = "org.postgresql:postgresql", version.ref = "postgresql" }
+exposed-core = { module = "org.jetbrains.exposed:exposed-core", version.ref = "exposed" }
+exposed-jdbc = { module = "org.jetbrains.exposed:exposed-jdbc", version.ref = "exposed" }
+exposed-dao = { module = "org.jetbrains.exposed:exposed-dao", version.ref = "exposed" }
+exposed-java-time = { module = "org.jetbrains.exposed:exposed-java-time", version.ref = "exposed" }
+hikaricp = { module = "com.zaxxer:HikariCP", version = "5.1.0" }
+
+# --- Sentry Error Monitoring ---
+sentry-core = { module = "io.sentry:sentry", version.ref = "sentry-backend" }
+sentry-kotlin-multiplatform = { module = "io.sentry:sentry-kotlin-multiplatform", version.ref = "sentry-kmp-client" }
+
+# --- Logging ---
+napier = { module = "io.github.aakira:napier", version.ref = "napier" }
+logback = { module = "ch.qos.logback:logback-classic", version = "1.5.32" }
+kotlin-logging = { module = "io.github.oshai:kotlin-logging-jvm", version = "7.0.0" }
+
+[plugins]
+kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
+kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
+compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+compose-multiplatform = { id = "org.jetbrains.compose", version.ref = "compose-plugin" }
+ktor = { id = "io.ktor.plugin", version.ref = "ktor" }
+buildkonfig = { id = "com.codingfeline.buildkonfig", version.ref = "buildkonfig" }

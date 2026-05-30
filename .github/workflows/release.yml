@@ -1,0 +1,114 @@
+name: Generate and Deploy Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version_tag:
+        description: 'The release version tag (e.g., v1.0.0)'
+        required: true
+        type: string
+  release:
+    types: [ published ] # Triggers when a draft is transitioned to published
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+jobs:
+  build-and-draft:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configure Git User
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Create and Push Git Tag
+        run: |
+          TAG_NAME="${{ github.event.inputs.version_tag }}"
+          echo "Creating Git tag: $TAG_NAME"
+          git tag -a "$TAG_NAME" -m "Release $TAG_NAME via manual workflow dispatch"
+          git push origin "$TAG_NAME"
+
+      - name: Set up Java Environment Runtime
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '21'
+
+      - name: Setup Gradle Wrapper Dependency Cache
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Dynamic Injection of Local Properties
+        run: |
+          echo "Injecting Repository Secrets into local.properties framework container..."
+          cat << EOF > local.properties
+          SENTRY_DSN_SERVER=${{ secrets.SENTRY_DSN_SERVER }}
+          DISCORD_CLIENT_ID=${{ secrets.DISCORD_CLIENT_ID }}
+          EOF
+
+      - name: Compile and Assemble Production WasmJS Frontend Artifacts
+        run: ./gradlew :app:webApp:wasmJsBrowserDistribution
+
+      - name: Compile and Assemble Server Distribution Packages
+        run: ./gradlew :server:installDist
+
+      - name: Obliterate Injected Local Properties Configuration
+        if: always()
+        run: |
+          if [ -f local.properties ]; then
+            echo "Wiping and securely wiping local workspace files containing raw secrets..."
+            rm -f local.properties
+          fi
+
+      - name: Create Production Draft Release on GitHub Dashboard
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event.inputs.version_tag }}
+          draft: true
+          prerelease: false
+          generate_release_notes: true
+          files: |
+            app/webApp/build/dist/wasmJs/productionExecutable/*
+
+  deploy-frontend-to-pages:
+    if: github.event_name == 'release' && github.event.action == 'published'
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout Repository Code
+        uses: actions/checkout@v4
+
+      - name: Set up Java Environment Runtime
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '21'
+
+      - name: Setup Gradle Wrapper Dependency Cache
+        uses: gradle/actions/setup-gradle@v4
+
+      # Re-building ensures compilation parameters match the released codebase state safely
+      - name: Compile Frontend Distribution
+        run: ./gradlew :app:webApp:wasmJsBrowserDistribution
+
+      - name: Setup GitHub Pages Environment
+        uses: actions/configure-pages@v4
+
+      - name: Upload Static Web Assets Artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: 'app/webApp/build/dist/wasmJs/productionExecutable'
+
+      - name: Deploy Production Workspace to GitHub Pages Routing
+        id: deployment
+        uses: actions/deploy-pages@v4
