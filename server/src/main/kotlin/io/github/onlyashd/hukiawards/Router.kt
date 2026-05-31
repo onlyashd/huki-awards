@@ -199,11 +199,6 @@ fun Route.discordRoutes(httpClient: HttpClient) {
 }
 
 fun Route.publicRoutes(igdbService: IgdbService, imageService: ImageService) {
-    get("/") {
-        val frontendUrl = System.getenv("FRONTEND_URL") ?: "https://onlyashd.github.io/huki-awards/"
-        call.respondRedirect(frontendUrl)
-    }
-
     // HTML Landing Page for Sharing (OpenGraph)
     get("${Share.path}/{id}") {
         val idStr = call.parameters["id"] ?: return@get call.respond(HttpStatusCode.BadRequest)
