@@ -2,7 +2,7 @@
 
 import com.codingfeline.buildkonfig.compiler.FieldSpec.Type.STRING
 import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
-import java.util.*
+import java.util.Properties
 import kotlin.js.ExperimentalJsExport
 
 plugins {
@@ -20,6 +20,15 @@ val localProperties = Properties().apply {
     }
 }
 
+val versionProperties = Properties().apply {
+    val propertiesFile = rootProject.file("version.properties")
+    if (propertiesFile.exists()) {
+        propertiesFile.inputStream().use { load(it) }
+    }
+}
+
+val projectVersion = versionProperties.getProperty("version") ?: "1.0.0"
+
 val discordId = localProperties.getProperty("DISCORD_CLIENT_ID") ?: ""
 val sentryDsn = localProperties.getProperty("SENTRY_DSN_SERVER") ?: ""
 
@@ -30,6 +39,7 @@ buildkonfig {
     defaultConfigs {
         buildConfigField(STRING, "DISCORD_CLIENT_ID", discordId)
         buildConfigField(STRING, "SENTRY_DSN", sentryDsn)
+        buildConfigField(STRING, "VERSION", projectVersion)
     }
 }
 
@@ -60,6 +70,7 @@ kotlin {
             implementation(compose.foundation)
             implementation(compose.material3)
             implementation(compose.components.resources)
+            implementation(libs.compose.material.icons.extended)
             implementation(libs.coil)
             implementation(libs.coil.network)
             implementation(libs.kotlinx.datetime)

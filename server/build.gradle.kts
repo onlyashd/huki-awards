@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.ktor)
     kotlin("jvm")
@@ -6,7 +8,14 @@ plugins {
 
 group = "io.github.onlyashd"
 
-version = "1.0.0"
+val versionProperties = Properties().apply {
+    val propertiesFile = rootProject.file("version.properties")
+    if (propertiesFile.exists()) {
+        propertiesFile.inputStream().use { load(it) }
+    }
+}
+
+version = versionProperties.getProperty("version") ?: "1.0.0"
 
 application {
     mainClass.set("io.github.onlyashd.hukiawards.ApplicationKt")
@@ -43,4 +52,8 @@ tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach 
     compilerOptions {
         jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_21)
     }
+}
+
+tasks.processResources {
+    from(rootProject.file("version.properties"))
 }

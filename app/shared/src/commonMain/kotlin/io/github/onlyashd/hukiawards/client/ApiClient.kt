@@ -3,10 +3,18 @@ package io.github.onlyashd.hukiawards.client
 import io.github.onlyashd.hukiawards.model.Routes
 import io.github.onlyashd.hukiawards.model.Routes.Api
 import io.github.onlyashd.hukiawards.model.Routes.Server
-import io.ktor.client.*
-import io.ktor.client.call.*
-import io.ktor.client.request.*
-import io.ktor.http.*
+import io.ktor.client.HttpClient
+import io.ktor.client.call.body
+import io.ktor.client.request.accept
+import io.ktor.client.request.bearerAuth
+import io.ktor.client.request.delete
+import io.ktor.client.request.get
+import io.ktor.client.request.post
+import io.ktor.client.request.put
+import io.ktor.client.request.setBody
+import io.ktor.http.ContentType
+import io.ktor.http.contentType
+import io.ktor.http.isSuccess
 
 /**
  * High-level core HTTP network client wrapper responsible for transmitting requests
@@ -18,7 +26,7 @@ import io.ktor.http.*
  * @property client The underlying pre-configured Ktor engine instance.
  * @property token The raw authenticated JWT string parsed from the initial authentication workflow.
  */
-class ApiClient(val client: HttpClient, val token: String) {
+class ApiClient(val client: HttpClient, val token: String?) {
     /**
      * Complete fully qualified base URL path mapping calculated by combining server endpoints.
      * Ex: `http://localhost:8080/api`
@@ -54,8 +62,15 @@ class ApiClient(val client: HttpClient, val token: String) {
      */
     fun resolveAdmin(route: Routes, id: String? = null): String {
         val adminPath = Routes.Admin.path + route.path
-        val path = if (id != null) "$adminPath/$id" else adminPath
+        val path = if (!id.isNullOrBlank()) "$adminPath/$id" else adminPath
         return "$apiBase$path"
+    }
+
+    /**
+     * Helper to ensure URLs are absolute and point to the API.
+     */
+    fun ensureAbsolute(urlString: String): String {
+        return if (urlString.startsWith("http")) urlString else "$apiBase$urlString"
     }
 
     /**
@@ -67,39 +82,61 @@ class ApiClient(val client: HttpClient, val token: String) {
      * @return The parsed object entity converted from response data by ContentNegotiation.
      */
     suspend inline fun <reified T> get(urlString: String): T {
-        return client.get(urlString) {
-            bearerAuth(token)
+        val response = client.get(ensureAbsolute(urlString)) {
+            token?.let { bearerAuth(it) }
             accept(ContentType.Application.Json)
-        }.body<T>()
+        }
+        if (!response.status.isSuccess()) {
+            throw Exception("GET ${response.call.request.url} failed: ${response.status}")
+        }
+        return response.body<T>()
     }
 
     /**
      * Requests a data structure model array or singular object targeting a typed application route.
      */
-    suspend inline fun <reified T> get(route: Routes, id: String? = null): T {
-        return client.get(resolve(route, id)) {
-            bearerAuth(token)
+    suspend inline fun <reified T> get(
+        route: Routes,
+        id: String? = null,
+        isAdmin: Boolean = false
+    ): T {
+        val url = if (isAdmin) resolveAdmin(route, id) else resolve(route, id)
+        val response = client.get(url) {
+            token?.let { bearerAuth(it) }
             accept(ContentType.Application.Json)
-        }.body<T>()
+        }
+        if (!response.status.isSuccess()) {
+            throw Exception("GET ${response.call.request.url} failed: ${response.status}")
+        }
+        return response.body<T>()
     }
 
     /**
      * Requests data records filtering results using URL parameters matching a specific text query string.
      */
-    suspend inline fun <reified T> get(route: Routes, query: String): T {
-        return client.get(resolveQuery(route, query)) {
-            bearerAuth(token)
+    suspend inline fun <reified T> getByQuery(route: Routes, query: String): T {
+        val response = client.get(resolveQuery(route, query)) {
+            token?.let { bearerAuth(it) }
             accept(ContentType.Application.Json)
-        }.body<T>()
+        }
+        if (!response.status.isSuccess()) {
+            throw Exception("GET ${response.call.request.url} failed: ${response.status}")
+        }
+        return response.body<T>()
     }
 
     /**
      * Downloads raw bytes from an endpoint. Useful for images.
      */
-    suspend fun download(route: Routes, id: String? = null): ByteArray {
-        return client.get(resolve(route, id)) {
-            bearerAuth(token)
-        }.body<ByteArray>()
+    suspend fun download(route: Routes, id: String? = null, isAdmin: Boolean = false): ByteArray {
+        val url = if (isAdmin) resolveAdmin(route, id) else resolve(route, id)
+        val response = client.get(url) {
+            token?.let { bearerAuth(it) }
+        }
+        if (!response.status.isSuccess()) {
+            throw Exception("Download ${response.call.request.url} failed: ${response.status}")
+        }
+        return response.body<ByteArray>()
     }
 
     /**
@@ -116,14 +153,19 @@ class ApiClient(val client: HttpClient, val token: String) {
         body: Any? = null,
         id: String? = null,
         isAdmin: Boolean = false
-    ): T =
-        client.post(if (isAdmin) resolveAdmin(route, id) else resolve(route, id)) {
-            bearerAuth(token)
+    ): T {
+        val response = client.post(if (isAdmin) resolveAdmin(route, id) else resolve(route, id)) {
+            token?.let { bearerAuth(it) }
             if (body != null) {
-                contentType(ContentType.Application.Json) // Fixes data payload interpretation drops
+                contentType(ContentType.Application.Json)
                 setBody(body)
             }
-        }.body()
+        }
+        if (!response.status.isSuccess()) {
+            throw Exception("POST ${response.call.request.url} failed: ${response.status}")
+        }
+        return response.body()
+    }
 
     /**
      * Executes an in-place modification or update request on a specific, targeted data record.
@@ -140,12 +182,17 @@ class ApiClient(val client: HttpClient, val token: String) {
         id: String,
         body: Any,
         isAdmin: Boolean = false
-    ): T =
-        client.put(if (isAdmin) resolveAdmin(route, id) else resolve(route, id)) {
-            bearerAuth(token)
-            contentType(ContentType.Application.Json) // Fixes data payload interpretation drops
+    ): T {
+        val response = client.put(if (isAdmin) resolveAdmin(route, id) else resolve(route, id)) {
+            token?.let { bearerAuth(it) }
+            contentType(ContentType.Application.Json)
             setBody(body)
-        }.body()
+        }
+        if (!response.status.isSuccess()) {
+            throw Exception("PUT ${response.call.request.url} failed: ${response.status}")
+        }
+        return response.body()
+    }
 
     /**
      * Requests the irreversible removal or destruction of a record entity on the server.
@@ -160,8 +207,14 @@ class ApiClient(val client: HttpClient, val token: String) {
         route: Routes,
         id: String? = null,
         isAdmin: Boolean = false
-    ): T =
-        client.delete(if (isAdmin) resolveAdmin(route, id) else resolve(route, id!!)) {
-            bearerAuth(token)
-        }.body()
+    ): T {
+        val response = client.delete(if (isAdmin) resolveAdmin(route, id) else resolve(route, id)) {
+            token?.let { bearerAuth(it) }
+        }
+        if (!response.status.isSuccess()) {
+            throw Exception("DELETE ${response.call.request.url} failed: ${response.status}")
+        }
+        return response.body()
+    }
 }
+

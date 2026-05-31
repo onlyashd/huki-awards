@@ -24,7 +24,7 @@ consulte:
 
 </details>
 
-- [Funcionalidades (PT-BR)](./docs/FUNCIONALIDADES.md)
+- [Funcionalidades (PT-BR)](docs/pt-br/FUNCIONALIDADES.md)
 - [Features Documentation (EN)](./docs/FEATURES.md)
 - [Architecture (EN)](./docs/ARCHITECTURE.md)
 - [Self-Hosting Tutorial (EN)](./docs/SELF_HOSTING.md)

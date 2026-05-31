@@ -3,12 +3,16 @@ package io.github.onlyashd.hukiawards
 import com.auth0.jwt.JWT
 import com.auth0.jwt.algorithms.Algorithm
 import io.github.onlyashd.hukiawards.model.AdminsTable
+import io.github.onlyashd.hukiawards.model.AuditLog
+import io.github.onlyashd.hukiawards.model.AuditLogsTable
 import io.github.onlyashd.hukiawards.model.AuthProvider
 import io.github.onlyashd.hukiawards.model.CategoriesTable
 import io.github.onlyashd.hukiawards.model.Category
 import io.github.onlyashd.hukiawards.model.CategoryRequest
+import io.github.onlyashd.hukiawards.model.CategoryStat
 import io.github.onlyashd.hukiawards.model.DiscordTokenResponse
 import io.github.onlyashd.hukiawards.model.DiscordUser
+import io.github.onlyashd.hukiawards.model.GlobalStats
 import io.github.onlyashd.hukiawards.model.LeaderboardEntry
 import io.github.onlyashd.hukiawards.model.Roles
 import io.github.onlyashd.hukiawards.model.Routes.Admin
@@ -16,7 +20,6 @@ import io.github.onlyashd.hukiawards.model.Routes.Admins
 import io.github.onlyashd.hukiawards.model.Routes.Api
 import io.github.onlyashd.hukiawards.model.Routes.CallbackDiscord
 import io.github.onlyashd.hukiawards.model.Routes.Categories
-import io.github.onlyashd.hukiawards.model.Routes.ExportVotes
 import io.github.onlyashd.hukiawards.model.Routes.LoginDiscord
 import io.github.onlyashd.hukiawards.model.Routes.Logout
 import io.github.onlyashd.hukiawards.model.Routes.Profile
@@ -29,10 +32,6 @@ import io.github.onlyashd.hukiawards.model.Routes.Vote
 import io.github.onlyashd.hukiawards.model.Routes.Votes
 import io.github.onlyashd.hukiawards.model.Settings
 import io.github.onlyashd.hukiawards.model.SettingsTable
-import io.github.onlyashd.hukiawards.model.GlobalStats
-import io.github.onlyashd.hukiawards.model.CategoryStat
-import io.github.onlyashd.hukiawards.model.AuditLog
-import io.github.onlyashd.hukiawards.model.AuditLogsTable
 import io.github.onlyashd.hukiawards.model.UserPrincipal
 import io.github.onlyashd.hukiawards.model.UserProfile
 import io.github.onlyashd.hukiawards.model.UsersTable
@@ -143,8 +142,8 @@ fun Route.discordRoutes(httpClient: HttpClient) {
             bearerAuth(tokenResponse.accessToken)
         }.body<DiscordUser>()
 
-        val username = discordProfile.username
-        val name = discordProfile.name
+        val username = discordProfile.username.lowercase()
+        val name = discordProfile.name ?: username
         val avatarUrl = if (discordProfile.avatarUrl != null) {
             "https://cdn.discordapp.com/avatars/${discordProfile.id}/${discordProfile.avatarUrl}.png"
         } else {
@@ -162,7 +161,11 @@ fun Route.discordRoutes(httpClient: HttpClient) {
                 .singleOrNull()
             if (existing != null) {
                 val id = existing[UsersTable.id]
-                UsersTable.update({ UsersTable.id eq id }) { it[UsersTable.role] = role }
+                UsersTable.update({ UsersTable.id eq id }) {
+                    it[UsersTable.role] = role
+                    it[UsersTable.name] = name
+                    it[UsersTable.avatarUrl] = avatarUrl
+                }
                 id
             } else {
                 UsersTable.insert {
@@ -496,6 +499,15 @@ private fun Route.searchRoutes(igdbService: IgdbService) {
     }
 }
 
+private val versionProperties = java.util.Properties().apply {
+    val resource =
+        Thread.currentThread().contextClassLoader.getResourceAsStream("version.properties")
+    if (resource != null) {
+        load(resource)
+    }
+}
+private val currentVersion = versionProperties.getProperty("version") ?: "1.0.0"
+
 private fun Route.settingsRoutes() {
     get(Settings.path) {
         val settings = transaction {
@@ -506,15 +518,37 @@ private fun Route.settingsRoutes() {
                     votingEnd = it.getOrNull(SettingsTable.votingEnd),
                     isVotingOpen = it[SettingsTable.isVotingOpen],
                     showDatesToUsers = it[SettingsTable.showDatesToUsers],
-                    phase = it[SettingsTable.phase]
+                    phase = it[SettingsTable.phase],
+                    logoUrl = it[SettingsTable.logoUrl],
+                    faviconUrl = it[SettingsTable.faviconUrl],
+                    version = currentVersion
                 )
-            }.singleOrNull() ?: Settings()
+            }.singleOrNull() ?: Settings(version = currentVersion)
         }
         call.respond(settings)
     }
 }
 
 private fun Route.profileRoutes() {
+    authenticate(AUTH_JWT) {
+        get(Profile.path) {
+            val user = call.principal<UserPrincipal>()
+                ?: return@get call.respond(HttpStatusCode.Unauthorized)
+            val profile = transaction {
+                UsersTable.selectAll().where { UsersTable.id eq user.userId }.map {
+                    UserProfile(
+                        id = it[UsersTable.id].toString(),
+                        name = it[UsersTable.name] ?: "",
+                        username = it[UsersTable.username] ?: "",
+                        avatarUrl = it[UsersTable.avatarUrl] ?: "",
+                    )
+                }.singleOrNull()
+            }
+            if (profile != null) call.respond(profile)
+            else call.respond(HttpStatusCode.NotFound, "User profile not found")
+        }
+    }
+
     get(Profile.byId()) {
         val id = call.parameters["id"]
         if (id.isNullOrBlank()) return@get call.respond(
@@ -556,13 +590,18 @@ private fun Route.voteRoutes() {
             }
 
             val myVotes = transaction {
-                VotesTable.selectAll().where { VotesTable.userId eq targetUserId }.map {
-                    VoteRequest(
-                        categoryId = it[VotesTable.categoryId].toString(),
-                        igdbGameId = it[VotesTable.igdbGameId],
-                        gameName = it[VotesTable.gameName] ?: "",
-                        gameCoverUrl = it[VotesTable.gameCoverUrl]
-                    )
+                try {
+                    VotesTable.selectAll().where { VotesTable.userId eq targetUserId }.map {
+                        VoteRequest(
+                            categoryId = it[VotesTable.categoryId].toString(),
+                            igdbGameId = it[VotesTable.igdbGameId],
+                            gameName = it[VotesTable.gameName] ?: "",
+                            gameCoverUrl = it[VotesTable.gameCoverUrl]
+                        )
+                    }
+                } catch (e: Exception) {
+                    logger.error("Error fetching votes for user $targetUserId", e)
+                    emptyList()
                 }
             }
             call.respond(myVotes)
@@ -583,51 +622,74 @@ private fun Route.voteRoutes() {
                 HttpStatusCode.Unauthorized
             )
             val request = call.receive<VoteRequest>()
-            val catId = UUID.fromString(request.categoryId)
+            logger.info { "User ${user.userId} attempting to vote for category ${request.categoryId} on target ${request.targetUserId}" }
+
+            val catId = try {
+                UUID.fromString(request.categoryId)
+            } catch (e: Exception) {
+                return@post call.respond(HttpStatusCode.BadRequest, "Invalid category ID")
+            }
 
             // If targetUserId is provided and the caller is an admin, vote for that user
             val targetUserId =
                 if (request.targetUserId != null && user.role.uppercase() == "ADMIN") {
-                    UUID.fromString(request.targetUserId)
+                    try {
+                        UUID.fromString(request.targetUserId)
+                    } catch (e: Exception) {
+                        return@post call.respond(
+                            HttpStatusCode.BadRequest,
+                            "Invalid target user ID"
+                        )
+                    }
                 } else {
                     user.userId
                 }
 
-            val voteResult = newSuspendedTransaction {
-                val settings = SettingsTable.selectAll().singleOrNull()
-                val isVotingOpen = settings?.get(SettingsTable.isVotingOpen) ?: true
+            val voteResult = try {
+                newSuspendedTransaction {
+                    val settings = SettingsTable.selectAll().singleOrNull()
+                    val isVotingOpen = settings?.get(SettingsTable.isVotingOpen) ?: true
 
-                if (!isVotingOpen && user.role.uppercase() != "ADMIN") {
-                    return@newSuspendedTransaction "CLOSED"
-                }
-
-                val existingVote = VotesTable.selectAll()
-                    .where { (VotesTable.userId eq targetUserId) and (VotesTable.categoryId eq catId) }
-                    .singleOrNull()
-
-                if (existingVote != null) {
-                    VotesTable.update({ (VotesTable.userId eq targetUserId) and (VotesTable.categoryId eq catId) }) {
-                        it[VotesTable.igdbGameId] = request.igdbGameId
-                        it[VotesTable.gameName] = request.gameName
-                        it[VotesTable.gameCoverUrl] = request.gameCoverUrl
+                    if (!isVotingOpen && user.role.uppercase() != "ADMIN") {
+                        return@newSuspendedTransaction "CLOSED"
                     }
-                    "UPDATED"
-                } else {
-                    VotesTable.insert {
-                        it[VotesTable.userId] = targetUserId
-                        it[VotesTable.categoryId] = catId
-                        it[VotesTable.igdbGameId] = request.igdbGameId
-                        it[VotesTable.gameName] = request.gameName
-                        it[VotesTable.gameCoverUrl] = request.gameCoverUrl
+
+                    val existingVote = VotesTable.selectAll()
+                        .where { (VotesTable.userId eq targetUserId) and (VotesTable.categoryId eq catId) }
+                        .singleOrNull()
+
+                    if (existingVote != null) {
+                        VotesTable.update({ (VotesTable.userId eq targetUserId) and (VotesTable.categoryId eq catId) }) {
+                            it[VotesTable.igdbGameId] = request.igdbGameId
+                            it[VotesTable.gameName] = request.gameName
+                            it[VotesTable.gameCoverUrl] = request.gameCoverUrl
+                        }
+                        "UPDATED"
+                    } else {
+                        VotesTable.insert {
+                            it[VotesTable.userId] = targetUserId
+                            it[VotesTable.categoryId] = catId
+                            it[VotesTable.igdbGameId] = request.igdbGameId
+                            it[VotesTable.gameName] = request.gameName
+                            it[VotesTable.gameCoverUrl] = request.gameCoverUrl
+                        }
+                        "SUCCESS"
                     }
-                    "SUCCESS"
                 }
+            } catch (e: Exception) {
+                logger.error(e) { "Failed to process vote" }
+                "ERROR"
             }
 
             when (voteResult) {
-                "UPDATED" -> call.respond(HttpStatusCode.OK, "Vote updated.")
+                "UPDATED" -> call.respond(HttpStatusCode.OK, request)
                 "CLOSED" -> call.respond(HttpStatusCode.Forbidden, "Voting is closed.")
-                else -> call.respond(HttpStatusCode.Created, "Success.")
+                "ERROR" -> call.respond(
+                    HttpStatusCode.InternalServerError,
+                    "Failed to process vote."
+                )
+
+                else -> call.respond(HttpStatusCode.Created, request)
             }
         }
     }
@@ -734,6 +796,8 @@ private fun Route.adminRoutes(imageService: ImageService) {
                             it[isVotingOpen] = request.isVotingOpen
                             it[showDatesToUsers] = request.showDatesToUsers
                             it[phase] = request.phase
+                            it[logoUrl] = request.logoUrl
+                            it[faviconUrl] = request.faviconUrl
                         }
                     }
                     val user = call.principal<UserPrincipal>()
@@ -746,21 +810,19 @@ private fun Route.adminRoutes(imageService: ImageService) {
                 }
             }
 
-            route(Admin.path) {
-                route(Categories.path) {
-                    post("/reorder") {
-                        val categoryIds = call.receive<List<String>>()
-                        transaction {
-                            categoryIds.forEachIndexed { index, id ->
-                                CategoriesTable.update({ CategoriesTable.id eq UUID.fromString(id) }) {
-                                    it[weight] = index
-                                }
+            route(Categories.path) {
+                post("/reorder") {
+                    val categoryIds = call.receive<List<String>>()
+                    transaction {
+                        categoryIds.forEachIndexed { index, id ->
+                            CategoriesTable.update({ CategoriesTable.id eq UUID.fromString(id) }) {
+                                it[weight] = index
                             }
                         }
-                        val user = call.principal<UserPrincipal>()
-                        logAdminAction(user?.username ?: "unknown", "REORDER_CATEGORIES")
-                        call.respond(HttpStatusCode.OK, "Categories reordered")
                     }
+                    val user = call.principal<UserPrincipal>()
+                    logAdminAction(user?.username ?: "unknown", "REORDER_CATEGORIES")
+                    call.respond(HttpStatusCode.OK, "Categories reordered")
                 }
             }
 

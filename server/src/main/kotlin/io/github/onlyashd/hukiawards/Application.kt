@@ -5,12 +5,12 @@ import com.auth0.jwt.algorithms.Algorithm
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
 import io.github.onlyashd.hukiawards.model.AdminsTable
+import io.github.onlyashd.hukiawards.model.AuditLogsTable
 import io.github.onlyashd.hukiawards.model.CategoriesTable
 import io.github.onlyashd.hukiawards.model.SettingsTable
 import io.github.onlyashd.hukiawards.model.UserPrincipal
 import io.github.onlyashd.hukiawards.model.UsersTable
 import io.github.onlyashd.hukiawards.model.VotesTable
-import io.github.onlyashd.hukiawards.model.AuditLogsTable
 import io.github.onlyashd.hukiawards.service.IgdbService
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.ktor.client.HttpClient
@@ -41,9 +41,11 @@ import io.ktor.server.plugins.contentnegotiation.ContentNegotiation as ServerCon
 private val logger = KotlinLogging.logger {}
 
 fun main() {
+    val port = System.getenv("PORT")?.toIntOrNull() ?: 8080
+
     embeddedServer(
         factory = Netty,
-        port = 8080,
+        port = port,
         host = "0.0.0.0",
         module = Application::module
     ).start(wait = true)

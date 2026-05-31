@@ -1,23 +1,48 @@
 package io.github.onlyashd.hukiawards.ui.components
 
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import io.github.onlyashd.hukiawards.client.ApiClient
 import io.github.onlyashd.hukiawards.model.Routes
+import io.github.onlyashd.hukiawards.model.Strings
 import io.github.onlyashd.hukiawards.util.AppLogger
 import kotlinx.coroutines.launch
 
 @Composable
-fun AdminsManagementSubScreen(api: ApiClient) {
+fun AdminsManagementSubScreen(
+    api: ApiClient,
+    onShowSnackbar: (String) -> Unit
+) {
     var adminUsernames by remember { mutableStateOf(emptyList<String>()) }
     var showAddDialog by remember { mutableStateOf(false) }
     var newAdminUsername by remember { mutableStateOf("") }
@@ -27,9 +52,10 @@ fun AdminsManagementSubScreen(api: ApiClient) {
     val refreshAdmins = {
         coroutineScope.launch {
             try {
-                adminUsernames = api.get(Routes.Admins)
+                adminUsernames = api.get(Routes.Admins, isAdmin = true)
             } catch (e: Exception) {
                 AppLogger.e("Failed to fetch admins: ${e.message}")
+                onShowSnackbar(Strings.ERROR_FETCH_ADMINS)
             }
         }
     }
@@ -44,11 +70,11 @@ fun AdminsManagementSubScreen(api: ApiClient) {
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text("Gerenciar Administradores", style = MaterialTheme.typography.headlineMedium)
+            Text(Strings.MANAGE_ADMINS, style = MaterialTheme.typography.headlineMedium)
             Button(onClick = { showAddDialog = true }) {
                 Icon(Icons.Default.Add, contentDescription = null)
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("Promover Usuário")
+                Text(Strings.PROMOTE_USER)
             }
         }
 
@@ -65,7 +91,7 @@ fun AdminsManagementSubScreen(api: ApiClient) {
                             Text(username, style = MaterialTheme.typography.bodyLarge)
                             if (isDefault) {
                                 Text(
-                                    "Administrador Padrão",
+                                    Strings.DEFAULT_ADMIN,
                                     style = MaterialTheme.typography.labelSmall,
                                     color = MaterialTheme.colorScheme.primary
                                 )
@@ -78,14 +104,16 @@ fun AdminsManagementSubScreen(api: ApiClient) {
                                     try {
                                         api.delete<Unit>(Routes.Admins, username, isAdmin = true)
                                         refreshAdmins()
+                                        onShowSnackbar(Strings.DEMOTED_SUCCESS)
                                     } catch (e: Exception) {
                                         AppLogger.e("Failed to demote admin: ${e.message}")
+                                        onShowSnackbar(Strings.ERROR_DEMOTE_ADMIN)
                                     }
                                 }
                             }) {
                                 Icon(
                                     Icons.Default.Delete,
-                                    contentDescription = "Remover",
+                                    contentDescription = Strings.REMOVE_ADMIN,
                                     tint = MaterialTheme.colorScheme.error
                                 )
                             }
@@ -99,15 +127,15 @@ fun AdminsManagementSubScreen(api: ApiClient) {
     if (showAddDialog) {
         AlertDialog(
             onDismissRequest = { showAddDialog = false },
-            title = { Text("Promover Usuário") },
+            title = { Text(Strings.PROMOTE_DIALOG_TITLE) },
             text = {
                 Column {
-                    Text("Digite o username do Discord para promover a administrador:")
+                    Text(Strings.PROMOTE_DIALOG_TEXT)
                     Spacer(modifier = Modifier.height(8.dp))
                     OutlinedTextField(
                         value = newAdminUsername,
                         onValueChange = { newAdminUsername = it },
-                        label = { Text("Username") },
+                        label = { Text(Strings.DISCORD_USERNAME_LABEL) },
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true
                     )
@@ -128,19 +156,21 @@ fun AdminsManagementSubScreen(api: ApiClient) {
                                     showAddDialog = false
                                     newAdminUsername = ""
                                     refreshAdmins()
+                                    onShowSnackbar(Strings.PROMOTED_SUCCESS)
                                 } catch (e: Exception) {
                                     AppLogger.e("Failed to promote user: ${e.message}")
+                                    onShowSnackbar(Strings.ERROR_PROMOTE_ADMIN)
                                 }
                             }
                         }
                     }
                 ) {
-                    Text("Promover")
+                    Text(Strings.PROMOTE_USER)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showAddDialog = false }) {
-                    Text("Cancelar")
+                    Text(Strings.CANCEL)
                 }
             }
         )

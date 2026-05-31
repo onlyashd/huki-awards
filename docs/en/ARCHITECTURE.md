@@ -12,15 +12,12 @@
                                           v
 +------------------+  OAuth Callback  +-----------------------+  IGDB API  +------------+
 | Twitch / Discord | <--------------> |    Ktor Backend       | <--------> |  IGDB API  |
-+------------------+                  | (Runs on Render Web)  |            +------------+
-                                      +-----------+-----------+
++------------------+ +-----------+-----------+ +------------+
                                                   |
                                                   | Ktor HTTP / JSON (Shared Models)
                                                   v
                                       +-----------------------+
                                       |   Frontend Client     |
-                                      | (Runs on Render Static|
-                                      |  or Android/Desktop)  |
                                       +-----------------------+
 ```
 
@@ -43,9 +40,9 @@
     ├── shared/                  # ← The shared client library (No platform run configurations!)
     │   ├── build.gradle.kts
     │   └── src/
-    │       └── commonMain/kotlin/ # Compose Multiplatform UI elements, ViewModels, and VotingApiClient
+│ └── commonMain/kotlin/ # Compose Multiplatform UI elements, ViewModels, and ApiClient
     │
-    └── webApp/                  # ← Separate Web-only frontend entry point (Runs on Render Static)
+└── webApp/ # ← Separate Web-only frontend entry point
         ├── build.gradle.kts
         └── src/wasmJsMain/      # index.html, WebAssembly entry point compilation scripts
 ```

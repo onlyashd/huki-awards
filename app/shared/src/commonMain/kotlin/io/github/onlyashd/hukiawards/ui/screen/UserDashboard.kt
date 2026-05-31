@@ -4,18 +4,45 @@ import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SuggestionChip
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -26,11 +53,12 @@ import io.github.onlyashd.hukiawards.client.ApiClient
 import io.github.onlyashd.hukiawards.model.Category
 import io.github.onlyashd.hukiawards.model.IgdbGameMetadata
 import io.github.onlyashd.hukiawards.model.Routes
+import io.github.onlyashd.hukiawards.model.Settings
 import io.github.onlyashd.hukiawards.model.UserProfile
 import io.github.onlyashd.hukiawards.model.VoteRequest
-import io.github.onlyashd.hukiawards.model.Settings
 import io.github.onlyashd.hukiawards.ui.components.SmallTopAppBar
 import io.github.onlyashd.hukiawards.util.AppLogger
+import io.github.onlyashd.hukiawards.util.formatToFriendlyDateTime
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -56,13 +84,12 @@ fun UserDashboard(
     LaunchedEffect(Unit) {
         try {
             categories = api.get(Routes.Categories)
-            val votesPath = if (targetUserId != null) {
-                "${Routes.Votes.path}/my?targetUserId=$targetUserId"
-            } else {
-                "${Routes.Votes.path}/my"
-            }
             settings = api.get(Routes.Settings)
-            userVotes = api.get(votesPath)
+            userVotes = if (targetUserId != null) {
+                api.get("${api.apiBase}${Routes.Votes.path}/my?targetUserId=$targetUserId")
+            } else {
+                api.get("${Routes.Votes.path}/my")
+            }
 
             if (userVotes.isNotEmpty() && userVotes.size < categories.size && settings?.isVotingOpen == true) {
                 showRestoreDialog = true
@@ -81,17 +108,18 @@ fun UserDashboard(
             SmallTopAppBar(
                 title = {
                     Column {
-                        Text("Huki Awards - 2026")
+                        Text(settings?.eventName ?: "Huki Awards")
                         if (settings?.showDatesToUsers == true && settings?.votingEnd != null) {
                             Text(
-                                text = "Encerra em: ${settings?.votingEnd}",
+                                text = "Encerra em: ${settings?.votingEnd?.formatToFriendlyDateTime()}",
                                 style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
                             )
                         }
                     }
                 },
                 profile = profile,
+                logoUrl = settings?.logoUrl,
                 actions = {
                     DropdownMenuItem(
                         text = { Text(if (isAdminPreview) "Voltar ao Admin" else "Sair da Conta") },
@@ -133,6 +161,8 @@ fun UserDashboard(
                         )
 
                         val allVoted = userVotes.size == categories.size
+                        val currentCategoryVoted =
+                            userVotes.any { it.categoryId == categories[currentCategoryIndex].id }
                         Button(
                             onClick = {
                                 if (currentCategoryIndex < categories.size - 1) {
@@ -141,7 +171,7 @@ fun UserDashboard(
                                     showOverview = true
                                 }
                             },
-                            enabled = currentCategoryIndex < categories.size - 1 || allVoted
+                            enabled = (currentCategoryIndex < categories.size - 1 && currentCategoryVoted) || allVoted
                         ) {
                             Text(if (currentCategoryIndex == categories.size - 1) "Finalizar" else "Próxima")
                         }
@@ -171,9 +201,10 @@ fun UserDashboard(
                         coroutineScope.launch {
                             try {
                                 val bytes = api.download(Routes.Share, id = profile?.id)
-                                io.github.onlyashd.hukiawards.util.downloadImage(
+                                io.github.onlyashd.hukiawards.util.downloadFile(
                                     bytes,
-                                    "${profile?.username ?: "huki-awards"}-summary.png"
+                                    "${profile?.username ?: "huki-awards"}-summary.png",
+                                    "image/png"
                                 )
                             } catch (e: Exception) {
                                 AppLogger.e("Falha ao baixar imagem: ${e.message}")
@@ -183,8 +214,8 @@ fun UserDashboard(
                     onShareRequested = {
                         coroutineScope.launch {
                             try {
-                                val shareUrl =
-                                    "${Routes.Server.path}${Routes.Share.path}/${profile?.id}"
+                                val origin = io.github.onlyashd.hukiawards.util.getOrigin()
+                                val shareUrl = "$origin${Routes.Share.path}/${profile?.id}"
                                 io.github.onlyashd.hukiawards.util.copyToClipboard(shareUrl)
                             } catch (e: Exception) {
                                 AppLogger.e("Falha ao copiar link: ${e.message}")
@@ -204,8 +235,9 @@ fun UserDashboard(
                     )
                     if (settings?.showDatesToUsers == true && settings?.votingEnd != null) {
                         Text(
-                            "Encerrou em: ${settings?.votingEnd}",
-                            style = MaterialTheme.typography.bodyLarge
+                            "Encerrou em: ${settings?.votingEnd?.formatToFriendlyDateTime()}",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                     Spacer(modifier = Modifier.height(24.dp))
@@ -288,17 +320,14 @@ fun UserDashboard(
                                     )
                                     userVotes =
                                         userVotes.filterNot { it.categoryId == currentCategory.id } + newVote
-
-                                    // Auto advance if it was a new vote or just stay? 
-                                    // Let's stay so user sees the "Voted" state
                                 } catch (e: Exception) {
-                                    // Handle database constraint failures
+                                    AppLogger.e("Falha ao enviar voto: ${e.message}")
                                 }
                             }
                         },
                         searchGamesAction = { query ->
                             try {
-                                api.get(Routes.Search, query)
+                                api.getByQuery(Routes.Search, query)
                             } catch (e: Exception) {
                                 emptyList()
                             }

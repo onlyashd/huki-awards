@@ -10,6 +10,8 @@ object SettingsTable : Table("settings") {
     val isVotingOpen = bool("is_voting_open").default(true)
     val showDatesToUsers = bool("show_dates_to_users").default(true)
     val phase = text("phase").default("NOMINATION")
+    val logoUrl = text("logo_url").nullable()
+    val faviconUrl = text("favicon_url").nullable()
 
     override val primaryKey = PrimaryKey(id)
 }

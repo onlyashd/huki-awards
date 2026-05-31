@@ -67,7 +67,7 @@ OS or via a `.env` file (if using a runner that supports it).
 The server uses **Exposed** as an ORM and will automatically create the necessary tables on the
 first run.
 
-- **Fresh Install**: Use the [initial_population.sql](./initial_population.sql) script to set up
+- **Fresh Install**: Use the [initial_population.sql](../initial_population.sql) script to set up
   your first admin user, default settings, and sample categories.
 
 ## 6. Running the Application
@@ -108,4 +108,4 @@ The distribution files will be located in `app/webApp/build/dist/wasmJs/producti
 
 ## 8. Verification
 
-To ensure everything is working as expected, follow our [Manual Testing Guide](./TESTING_GUIDE.md).
+To ensure everything is working as expected, follow our [Manual Testing Guide](TESTING_GUIDE.md).

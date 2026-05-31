@@ -1,11 +1,8 @@
 package io.github.onlyashd.hukiawards.ui.components
 
-import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -24,10 +21,8 @@ import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.PlainTooltip
 import androidx.compose.material3.Text
 import androidx.compose.material3.TooltipBox
@@ -105,13 +100,16 @@ fun CategoriesManagementSubScreen(
             ) {
                 itemsIndexed(list, key = { _, cat -> cat.id!! }) { index, category ->
                     var isDragging by remember { mutableStateOf(false) }
+                    var accumulatedDrag by remember { mutableStateOf(0f) }
 
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
                             .animateItem()
+                            .zIndex(if (isDragging) 1f else 0f)
                             .graphicsLayer {
-                                translationY = 0f
+                                scaleX = if (isDragging) 1.02f else 1.0f
+                                scaleY = if (isDragging) 1.02f else 1.0f
                             },
                         colors = CardDefaults.cardColors(
                             containerColor = if (isDragging) colors().surfaceVariant else colors().surface
@@ -129,9 +127,12 @@ fun CategoriesManagementSubScreen(
                                 contentDescription = "Reordenar",
                                 modifier = Modifier
                                     .padding(end = 12.dp)
-                                    .pointerInput(Unit) {
-                                        detectDragGesturesAfterLongPress(
-                                            onDragStart = { isDragging = true },
+                                    .pointerInput(category.id) {
+                                        detectDragGestures(
+                                            onDragStart = {
+                                                isDragging = true
+                                                accumulatedDrag = 0f
+                                            },
                                             onDragEnd = {
                                                 isDragging = false
                                                 onReorder(list.mapNotNull { it.id })
@@ -139,17 +140,24 @@ fun CategoriesManagementSubScreen(
                                             onDragCancel = { isDragging = false },
                                             onDrag = { change, dragAmount ->
                                                 change.consume()
+                                                accumulatedDrag += dragAmount.y
                                                 val dragThreshold = 50f
-                                                if (dragAmount.y > dragThreshold && index < list.size - 1) {
-                                                    val newList = list.toMutableList()
-                                                    val item = newList.removeAt(index)
-                                                    newList.add(index + 1, item)
-                                                    list = newList
-                                                } else if (dragAmount.y < -dragThreshold && index > 0) {
-                                                    val newList = list.toMutableList()
-                                                    val item = newList.removeAt(index)
-                                                    newList.add(index - 1, item)
-                                                    list = newList
+
+                                                val i = list.indexOfFirst { it.id == category.id }
+                                                if (i != -1) {
+                                                    if (accumulatedDrag > dragThreshold && i < list.size - 1) {
+                                                        val newList = list.toMutableList()
+                                                        val item = newList.removeAt(i)
+                                                        newList.add(i + 1, item)
+                                                        list = newList
+                                                        accumulatedDrag = 0f
+                                                    } else if (accumulatedDrag < -dragThreshold && i > 0) {
+                                                        val newList = list.toMutableList()
+                                                        val item = newList.removeAt(i)
+                                                        newList.add(i - 1, item)
+                                                        list = newList
+                                                        accumulatedDrag = 0f
+                                                    }
                                                 }
                                             }
                                         )

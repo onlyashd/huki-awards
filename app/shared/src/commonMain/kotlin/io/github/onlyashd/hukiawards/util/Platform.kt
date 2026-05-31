@@ -1,4 +1,9 @@
 package io.github.onlyashd.hukiawards.util
 
-expect fun downloadImage(bytes: ByteArray, fileName: String)
+expect fun downloadFile(
+    bytes: ByteArray,
+    fileName: String,
+    mimeType: String = "application/octet-stream"
+)
 expect fun copyToClipboard(text: String)
+expect fun getOrigin(): String

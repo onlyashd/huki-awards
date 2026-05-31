@@ -12,6 +12,9 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -28,9 +31,9 @@ import io.github.onlyashd.hukiawards.util.colors
 import io.github.onlyashd.hukiawards.util.formatToFriendlyDateTime
 
 @Composable
-fun LoginScreen(
+fun LandingScreen(
     settings: Settings? = null,
-    onLoginRequested: () -> Unit
+    onGoToLogin: () -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -44,36 +47,39 @@ fun LoginScreen(
             model = settings?.logoUrl
                 ?: "https://static-cdn.jtvnw.net/jtv_user_pictures/7225fcae-f28e-4fa9-a754-5cc2db25c83c-profile_image-70x70.png",
             contentDescription = null,
-            modifier = Modifier.size(120.dp)
+            modifier = Modifier.size(160.dp)
         )
 
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(32.dp))
 
         Text(
             text = settings?.eventName ?: "Huki Awards",
             fontWeight = FontWeight.Bold,
-            style = MaterialTheme.typography.headlineLarge,
+            style = MaterialTheme.typography.displayMedium,
             textAlign = TextAlign.Center
         )
 
-        val statusText = if (settings?.isVotingOpen == true) "Votação Aberta" else "Votação Fechada"
+        Spacer(modifier = Modifier.height(16.dp))
+
+        val statusText =
+            if (settings?.isVotingOpen == true) "Votação Aberta" else "Votação Encerrada"
         val statusColor = if (settings?.isVotingOpen == true) colors().primary else colors().error
 
         Surface(
             color = statusColor.copy(alpha = 0.1f),
-            shape = MaterialTheme.shapes.small,
+            shape = MaterialTheme.shapes.medium,
             modifier = Modifier.padding(vertical = 8.dp)
         ) {
             Text(
                 text = statusText,
                 color = statusColor,
-                style = MaterialTheme.typography.labelLarge,
-                modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
                 fontWeight = FontWeight.Bold
             )
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(32.dp))
 
         // Phase info
         val phaseName = when (settings?.phase) {
@@ -87,59 +93,72 @@ fun LoginScreen(
             else -> "O evento começará em breve!"
         }
 
-        Text(
-            text = "Fase atual: $phaseName",
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.SemiBold
-        )
-        Text(
-            text = phaseDesc,
-            style = MaterialTheme.typography.bodyMedium,
-            textAlign = TextAlign.Center,
-            color = colors().onSurfaceVariant,
-            modifier = Modifier.padding(top = 4.dp)
-        )
-
-        if (settings?.showDatesToUsers == true) {
-            Spacer(modifier = Modifier.height(32.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly
+        Card(
+            modifier = Modifier.fillMaxWidth(0.8f),
+            colors = CardDefaults.cardColors(containerColor = colors().surfaceVariant.copy(alpha = 0.3f))
+        ) {
+            Column(
+                modifier = Modifier.padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("Início", style = MaterialTheme.typography.labelMedium)
-                    Text(
-                        settings.votingStart?.formatToFriendlyDateTime() ?: "-",
-                        style = MaterialTheme.typography.bodyLarge,
-                        fontWeight = FontWeight.Medium
-                    )
-                }
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("Término", style = MaterialTheme.typography.labelMedium)
-                    Text(
-                        settings.votingEnd?.formatToFriendlyDateTime() ?: "-",
-                        style = MaterialTheme.typography.bodyLarge,
-                        fontWeight = FontWeight.Medium
-                    )
-                }
+                Text(
+                    text = "Fase: $phaseName",
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = phaseDesc,
+                    style = MaterialTheme.typography.bodyLarge,
+                    textAlign = TextAlign.Center,
+                    color = colors().onSurfaceVariant
+                )
             }
         }
 
-        Spacer(modifier = Modifier.height(48.dp))
+        if (settings?.showDatesToUsers == true) {
+            Spacer(modifier = Modifier.height(40.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(0.8f),
+                horizontalArrangement = Arrangement.SpaceEvenly
+            ) {
+                DateInfoColumn("Início", settings.votingStart?.formatToFriendlyDateTime() ?: "-")
+                DateInfoColumn("Término", settings.votingEnd?.formatToFriendlyDateTime() ?: "-")
+            }
+        }
+
+        Spacer(modifier = Modifier.height(64.dp))
 
         Button(
-            onClick = onLoginRequested,
-            modifier = Modifier.height(56.dp).fillMaxWidth(0.6f),
-            shape = MaterialTheme.shapes.medium
+            onClick = onGoToLogin,
+            modifier = Modifier.height(64.dp).fillMaxWidth(0.5f),
+            shape = MaterialTheme.shapes.large,
+            elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp)
         ) {
-            Text("Entrar com Discord", style = MaterialTheme.typography.titleMedium)
+            Text("Participar Agora", style = MaterialTheme.typography.titleLarge)
         }
 
         Spacer(modifier = Modifier.height(16.dp))
         Text(
-            "Faça login para participar e deixar seu voto!",
-            style = MaterialTheme.typography.labelSmall,
-            color = colors().onSurfaceVariant.copy(alpha = 0.7f)
+            "Faça login com sua conta do Discord",
+            style = MaterialTheme.typography.labelMedium,
+            color = colors().onSurfaceVariant.copy(alpha = 0.6f)
+        )
+    }
+}
+
+@Composable
+private fun DateInfoColumn(label: String, date: String) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelLarge,
+            color = colors().onSurfaceVariant
+        )
+        Text(
+            text = date,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold
         )
     }
 }

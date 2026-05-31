@@ -37,6 +37,14 @@ jobs:
           git tag -a "$TAG_NAME" -m "Release $TAG_NAME via manual workflow dispatch"
           git push origin "$TAG_NAME"
 
+      - name: Update Version in version.properties
+        run: |
+          TAG_NAME="${{ github.event.inputs.version_tag }}"
+          # Strip 'v' prefix if present
+          VERSION="${TAG_NAME#v}"
+          echo "Updating version.properties to $VERSION"
+          echo "version=$VERSION" > version.properties
+
       - name: Set up Java Environment Runtime
         uses: actions/setup-java@v4
         with:
@@ -96,6 +104,18 @@ jobs:
 
       - name: Setup Gradle Wrapper Dependency Cache
         uses: gradle/actions/setup-gradle@v4
+
+      - name: Inject Version into version.properties
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            TAG_NAME="${{ github.event.inputs.version_tag }}"
+          else
+            TAG_NAME="${{ github.event.release.tag_name }}"
+          fi
+          # Strip 'v' prefix if present
+          VERSION="${TAG_NAME#v}"
+          echo "Updating version.properties to $VERSION"
+          echo "version=$VERSION" > version.properties
 
       # Re-building ensures compilation parameters match the released codebase state safely
       - name: Compile Frontend Distribution

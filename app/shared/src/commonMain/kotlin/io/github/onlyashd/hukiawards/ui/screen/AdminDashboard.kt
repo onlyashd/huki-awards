@@ -2,35 +2,82 @@ package io.github.onlyashd.hukiawards.ui.screen
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.automirrored.filled.List
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.ThumbUp
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonColors
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.NavigationRail
+import androidx.compose.material3.NavigationRailItem
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import io.github.onlyashd.hukiawards.client.ApiClient
 import io.github.onlyashd.hukiawards.model.Category
+import io.github.onlyashd.hukiawards.model.GlobalStats
 import io.github.onlyashd.hukiawards.model.Routes
 import io.github.onlyashd.hukiawards.model.Routes.Categories
 import io.github.onlyashd.hukiawards.model.Strings
 import io.github.onlyashd.hukiawards.model.UserProfile
-import io.github.onlyashd.hukiawards.model.GlobalStats
-import io.github.onlyashd.hukiawards.ui.components.*
+import io.github.onlyashd.hukiawards.ui.components.AdminsManagementSubScreen
+import io.github.onlyashd.hukiawards.ui.components.CategoriesManagementSubScreen
+import io.github.onlyashd.hukiawards.ui.components.GlobalStatsCard
+import io.github.onlyashd.hukiawards.ui.components.SettingsManagementSubScreen
+import io.github.onlyashd.hukiawards.ui.components.SmallTopAppBar
+import io.github.onlyashd.hukiawards.ui.components.VotesManagementSubScreen
 import io.github.onlyashd.hukiawards.util.AppLogger
 import io.github.onlyashd.hukiawards.util.colors
-import io.ktor.client.call.*
-import io.ktor.client.request.*
+import io.ktor.client.call.body
+import io.ktor.client.request.bearerAuth
+import io.ktor.client.request.get
 import kotlinx.coroutines.launch
 
 enum class AdminScreen { OVERVIEW, CATEGORIES, MANAGE_VOTES, VOTE_AS_USER, SETTINGS, ADMINS }
@@ -45,10 +92,12 @@ fun AdminDashboard(
     var currentScreen by remember { mutableStateOf(AdminScreen.OVERVIEW) }
     var categories by remember { mutableStateOf(emptyList<Category>()) }
     var globalStats by remember { mutableStateOf<GlobalStats?>(null) }
+    var settings by remember { mutableStateOf<io.github.onlyashd.hukiawards.model.Settings?>(null) }
     var showCreateDialog by remember { mutableStateOf(false) }
     var editingCategory by remember { mutableStateOf<Category?>(null) }
     var categoryToDelete by remember { mutableStateOf<Category?>(null) }
     var showDeleteVotesConfirmation by remember { mutableStateOf(false) }
+    val snackbarHostState = remember { SnackbarHostState() }
 
     val coroutineScope = rememberCoroutineScope()
 
@@ -73,17 +122,30 @@ fun AdminDashboard(
         }
     }
 
+    val refreshSettings = {
+        coroutineScope.launch {
+            try {
+                settings = api.get(Routes.Settings)
+            } catch (e: Exception) {
+                AppLogger.e("Error fetching settings: ${e.message}")
+            }
+        }
+    }
+
     LaunchedEffect(Unit) {
         refreshCategories()
         refreshStats()
+        refreshSettings()
     }
 
     Scaffold(
         modifier = Modifier.background(colors().background),
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             SmallTopAppBar(
                 title = { Text(Strings.ADMIN_CONSOLE) },
                 profile = profile,
+                logoUrl = settings?.logoUrl,
                 actions = {
                     DropdownMenuItem(
                         text = { Text(Strings.VIEW_AS_USER) },
@@ -224,6 +286,10 @@ fun AdminDashboard(
                                         refreshCategories()
                                     } catch (e: Exception) {
                                         AppLogger.e("Failed to reorder categories: ${e.message}")
+                                        snackbarHostState.showSnackbar(
+                                            message = Strings.ERROR_REORDER_CATEGORIES,
+                                            duration = SnackbarDuration.Short
+                                        )
                                     }
                                 }
                             }
@@ -237,13 +303,18 @@ fun AdminDashboard(
                             onExportCsv = {
                                 coroutineScope.launch {
                                     try {
-                                        val bytes = api.download(Routes.ExportVotes)
-                                        io.github.onlyashd.hukiawards.util.downloadImage(
+                                        val bytes = api.download(Routes.ExportVotes, isAdmin = true)
+                                        io.github.onlyashd.hukiawards.util.downloadFile(
                                             bytes,
-                                            "votos_huki_awards.csv"
+                                            "votos_huki_awards.csv",
+                                            "text/csv"
                                         )
                                     } catch (e: Exception) {
                                         AppLogger.e("Failed to export votes: ${e.message}")
+                                        snackbarHostState.showSnackbar(
+                                            message = Strings.ERROR_EXPORT_VOTES,
+                                            duration = SnackbarDuration.Short
+                                        )
                                     }
                                 }
                             },
@@ -252,16 +323,31 @@ fun AdminDashboard(
                                     try {
                                         val url =
                                             "${api.apiBase}${Routes.Categories.path}/${category.id}/share"
-                                        val customBytes = api.client.get(url) {
-                                            bearerAuth(api.token)
-                                        }.body<ByteArray>()
+                                        val response = api.client.get(url) {
+                                            api.token?.let { bearerAuth(it) }
+                                        }
 
-                                        io.github.onlyashd.hukiawards.util.downloadImage(
+                                        if (response.status == io.ktor.http.HttpStatusCode.NoContent) {
+                                            snackbarHostState.showSnackbar(
+                                                message = Strings.ERROR_NO_VOTES_CATEGORY,
+                                                duration = SnackbarDuration.Short
+                                            )
+                                            return@launch
+                                        }
+
+                                        val customBytes = response.body<ByteArray>()
+
+                                        io.github.onlyashd.hukiawards.util.downloadFile(
                                             customBytes,
-                                            "top10-${category.name}.png"
+                                            "top10-${category.name}.png",
+                                            "image/png"
                                         )
                                     } catch (e: Exception) {
                                         AppLogger.e("Failed to download leaderboard: ${e.message}")
+                                        snackbarHostState.showSnackbar(
+                                            message = "Erro ao baixar imagem: ${e.message}",
+                                            duration = SnackbarDuration.Short
+                                        )
                                     }
                                 }
                             },
@@ -270,16 +356,31 @@ fun AdminDashboard(
                                     try {
                                         val url =
                                             "${api.apiBase}${Routes.Categories.path}/${category.id}/winner"
-                                        val customBytes = api.client.get(url) {
-                                            bearerAuth(api.token)
-                                        }.body<ByteArray>()
+                                        val response = api.client.get(url) {
+                                            api.token?.let { bearerAuth(it) }
+                                        }
 
-                                        io.github.onlyashd.hukiawards.util.downloadImage(
+                                        if (response.status == io.ktor.http.HttpStatusCode.NoContent) {
+                                            snackbarHostState.showSnackbar(
+                                                message = Strings.ERROR_NO_VOTES_CATEGORY,
+                                                duration = SnackbarDuration.Short
+                                            )
+                                            return@launch
+                                        }
+
+                                        val customBytes = response.body<ByteArray>()
+
+                                        io.github.onlyashd.hukiawards.util.downloadFile(
                                             customBytes,
-                                            "vencedor-${category.name}.png"
+                                            "vencedor-${category.name}.png",
+                                            "image/png"
                                         )
                                     } catch (e: Exception) {
                                         AppLogger.e("Failed to download winner card: ${e.message}")
+                                        snackbarHostState.showSnackbar(
+                                            message = "Erro ao baixar imagem: ${e.message}",
+                                            duration = SnackbarDuration.Short
+                                        )
                                     }
                                 }
                             }
@@ -292,9 +393,13 @@ fun AdminDashboard(
 
                         LaunchedEffect(Unit) {
                             try {
-                                users = api.get(Routes.Users)
+                                users = api.get(Routes.Users, isAdmin = true)
                             } catch (e: Exception) {
                                 AppLogger.e("Failed to fetch users: ${e.message}")
+                                snackbarHostState.showSnackbar(
+                                    message = Strings.ERROR_FETCH_USERS,
+                                    duration = SnackbarDuration.Short
+                                )
                             }
                         }
 
@@ -367,11 +472,25 @@ fun AdminDashboard(
                     }
 
                     AdminScreen.SETTINGS -> {
-                        SettingsManagementSubScreen(api = api)
+                        SettingsManagementSubScreen(
+                            api = api,
+                            onShowSnackbar = { message ->
+                                coroutineScope.launch {
+                                    snackbarHostState.showSnackbar(message)
+                                }
+                            }
+                        )
                     }
 
                     AdminScreen.ADMINS -> {
-                        AdminsManagementSubScreen(api = api)
+                        AdminsManagementSubScreen(
+                            api = api,
+                            onShowSnackbar = { message ->
+                                coroutineScope.launch {
+                                    snackbarHostState.showSnackbar(message)
+                                }
+                            }
+                        )
                     }
                 }
             }
@@ -402,6 +521,10 @@ fun AdminDashboard(
                                     refreshCategories()
                                 } catch (e: Exception) {
                                     AppLogger.e("Failed to delete category: ${e.message}")
+                                    snackbarHostState.showSnackbar(
+                                        message = Strings.ERROR_DELETE_CATEGORY,
+                                        duration = SnackbarDuration.Short
+                                    )
                                 }
                             }
                         }
@@ -434,6 +557,10 @@ fun AdminDashboard(
                                 showDeleteVotesConfirmation = false
                             } catch (e: Exception) {
                                 AppLogger.e("Failed to clear votes: ${e.message}")
+                                snackbarHostState.showSnackbar(
+                                    message = Strings.ERROR_CLEAR_VOTES,
+                                    duration = SnackbarDuration.Short
+                                )
                             }
                         }
                     },
@@ -454,11 +581,6 @@ fun AdminDashboard(
     if (showCreateDialog) {
         var newCategoryName by remember { mutableStateOf(editingCategory?.name ?: "") }
         var newCategoryDesc by remember { mutableStateOf(editingCategory?.description ?: "") }
-        var newCategoryWeight by remember {
-            mutableStateOf(
-                editingCategory?.weight?.toString() ?: "1"
-            )
-        }
 
         AlertDialog(
             onDismissRequest = {
@@ -490,13 +612,6 @@ fun AdminDashboard(
                         },
                         modifier = Modifier.fillMaxWidth()
                     )
-                    OutlinedTextField(
-                        value = newCategoryWeight,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        onValueChange = { newCategoryWeight = it },
-                        label = { Text(Strings.WEIGHT_ORDER, color = colors().onBackground) },
-                        modifier = Modifier.fillMaxWidth()
-                    )
                 }
             },
             confirmButton = {
@@ -515,7 +630,7 @@ fun AdminDashboard(
                                         id = editingCategory?.id,
                                         name = newCategoryName,
                                         description = newCategoryDesc,
-                                        weight = newCategoryWeight.toIntOrNull() ?: 1,
+                                        weight = editingCategory?.weight ?: (categories.size + 1),
                                     )
 
                                     if (editingCategory == null) {
@@ -534,6 +649,10 @@ fun AdminDashboard(
                                     refreshCategories()
                                 } catch (e: Exception) {
                                     AppLogger.e("Failed to save category: ${e.message}")
+                                    snackbarHostState.showSnackbar(
+                                        message = Strings.ERROR_SAVE_CATEGORY,
+                                        duration = SnackbarDuration.Short
+                                    )
                                 }
                             }
                         }

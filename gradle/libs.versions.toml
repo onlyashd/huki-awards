@@ -14,6 +14,7 @@ kotlinx-datetime = "0.6.1"
 
 [libraries]
 # --- Shared Core & Client Networking ---
+compose-material-icons-extended = { module = "org.jetbrains.compose.components:components-resources", version.ref = "compose-plugin" }
 kotlinx-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "kotlinx-datetime" }
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinx-serialization" }
 ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
