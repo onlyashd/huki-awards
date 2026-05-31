@@ -120,6 +120,9 @@ jobs:
           echo "Updating version.properties to $VERSION"
           echo "version=$VERSION" > version.properties
 
+      - name: Set gradle permissions
+        run: chmod +x ./gradlew
+
       # Re-building ensures compilation parameters match the released codebase state safely
       - name: Compile Frontend Distribution
         run: ./gradlew :app:webApp:wasmJsBrowserDistribution
