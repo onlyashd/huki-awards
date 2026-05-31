@@ -2,6 +2,7 @@
 FROM gradle:8.5-jdk21 AS build
 COPY --chown=gradle:gradle . /home/gradle/src
 WORKDIR /home/gradle/src
+RUN chmod +x ./gradlew
 
 # Build the server fat JAR
 RUN ./gradlew :server:buildFatJar --no-daemon
