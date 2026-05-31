@@ -7,7 +7,7 @@ WORKDIR /home/gradle/src
 RUN ./gradlew :server:buildFatJar --no-daemon
 
 # Stage 2: Run the application
-FROM openjdk:21-slim
+FROM eclipse-temurin:21-jre-jammy
 EXPOSE 8080
 RUN mkdir /app
 
