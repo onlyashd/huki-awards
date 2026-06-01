@@ -189,7 +189,7 @@ fun Route.discordRoutes(httpClient: HttpClient) {
             .sign(Algorithm.HMAC256(jwtSecret))
 
         val frontendUrl = System.getenv("FRONTEND_URL") ?: "http://localhost:3030"
-        val dashboardPath = if (role == "ADMIN") "#/admin/dashboard" else "#/user/dashboard"
+        val dashboardPath = "#/dashboard"
         call.respondRedirect("$frontendUrl/$dashboardPath?token=$token")
     }
 
