@@ -26,6 +26,7 @@ import io.github.onlyashd.hukiawards.util.AppLogger
 import io.github.onlyashd.hukiawards.util.getRoleFromToken
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.DefaultRequest
+import io.ktor.client.plugins.compression.ContentEncoding
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.request.header
 import io.ktor.http.ContentType
@@ -54,6 +55,10 @@ fun App(
 
     val httpClient = remember {
         HttpClient {
+            install(ContentEncoding) {
+                gzip()
+                deflate()
+            }
             install(ContentNegotiation) {
                 json(Json {
                     ignoreUnknownKeys = true
