@@ -19,25 +19,37 @@ fun main() {
 
     val currentUrlString = window.location.href
 
-    // Parse out the token regardless of whether it's placed before or after the '#' hash symbol
-    val tokenFromUrl = when {
+    // 1. Try to get token from URL (first priority)
+    var tokenFromUrl = when {
         currentUrlString.contains("token=") -> {
             currentUrlString.substringAfter("token=").substringBefore("&")
         }
-
         else -> null
     }
 
-    if (!tokenFromUrl.isNullOrBlank()) {
-        // Strip out the token from the browser bar history cleanly so it doesn't linger visible
+    // 2. If no token in URL, try to get from localStorage (persistence)
+    if (tokenFromUrl.isNullOrBlank()) {
+        tokenFromUrl = window.localStorage.getItem("session_token")
+    } else {
+        // If we found a new token in the URL, save it to localStorage
+        window.localStorage.setItem("session_token", tokenFromUrl)
+
+        // Strip out the token from the browser bar history cleanly
         val cleanUrl = currentUrlString.substringBefore("?")
         window.history.replaceState(null, "", cleanUrl)
-        AppLogger.i("Session token successfully intercepted from navigation context.")
+        AppLogger.i("Session token successfully intercepted and persisted.")
     }
 
     CanvasBasedWindow(canvasElementId = "ComposeTarget") {
         App(
             initialToken = tokenFromUrl,
+            onTokenChanged = { newToken ->
+                if (newToken == null) {
+                    window.localStorage.removeItem("session_token")
+                } else {
+                    window.localStorage.setItem("session_token", newToken)
+                }
+            },
             onNavigate = { targetUrl ->
                 window.location.href = targetUrl
             }

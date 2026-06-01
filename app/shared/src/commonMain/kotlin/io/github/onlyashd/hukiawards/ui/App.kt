@@ -37,10 +37,16 @@ import kotlinx.serialization.json.Json
 @Composable
 fun App(
     initialToken: String?,
+    onTokenChanged: (String?) -> Unit = {},
     onNavigate: (String) -> Unit
 ) {
     var currentRoute by remember { mutableStateOf("/") }
     var sessionToken by remember { mutableStateOf(initialToken) }
+
+    LaunchedEffect(sessionToken) {
+        onTokenChanged(sessionToken)
+    }
+
     var isAdminPreviewMode by remember { mutableStateOf(false) }
 
     var userProfile by remember { mutableStateOf<UserProfile?>(null) }

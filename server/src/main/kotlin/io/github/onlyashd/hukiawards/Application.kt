@@ -26,6 +26,10 @@ import io.ktor.server.auth.jwt.jwt
 import io.ktor.server.auth.oauth
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
+import io.ktor.server.plugins.compression.Compression
+import io.ktor.server.plugins.compression.deflate
+import io.ktor.server.plugins.compression.gzip
+import io.ktor.server.plugins.compression.minimumSize
 import io.ktor.server.routing.routing
 import io.sentry.Sentry
 import kotlinx.serialization.json.Json
@@ -56,9 +60,19 @@ fun Application.module() {
     configureJwt()
     connectDatabase()
 
+    install(Compression) {
+        gzip {
+            priority = 1.0
+        }
+        deflate {
+            priority = 10.0
+            minimumSize(1024)
+        }
+    }
+
     install(ServerContentNegotiation) {
         json(Json {
-            prettyPrint = true
+            prettyPrint = false
             ignoreUnknownKeys = true
         })
     }

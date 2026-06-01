@@ -20,12 +20,14 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.ExitToApp
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -56,6 +58,7 @@ import io.github.onlyashd.hukiawards.model.Routes
 import io.github.onlyashd.hukiawards.model.Settings
 import io.github.onlyashd.hukiawards.model.UserProfile
 import io.github.onlyashd.hukiawards.model.VoteRequest
+import io.github.onlyashd.hukiawards.shared.AppConfig
 import io.github.onlyashd.hukiawards.ui.components.SmallTopAppBar
 import io.github.onlyashd.hukiawards.util.AppLogger
 import io.github.onlyashd.hukiawards.util.formatToFriendlyDateTime
@@ -130,6 +133,26 @@ fun UserDashboard(
                             )
                         },
                         onClick = onLogoutRequested
+                    )
+
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+
+                    DropdownMenuItem(
+                        enabled = false,
+                        text = {
+                            Text(
+                                text = "v${AppConfig.VERSION}",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f),
+                            )
+                        },
+                        leadingIcon = {
+                            Icon(
+                                Icons.Default.Info,
+                                contentDescription = "Info"
+                            )
+                        },
+                        onClick = {}
                     )
                 }
             )

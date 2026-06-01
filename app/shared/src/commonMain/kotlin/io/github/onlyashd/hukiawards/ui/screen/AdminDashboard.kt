@@ -67,6 +67,7 @@ import io.github.onlyashd.hukiawards.model.Routes
 import io.github.onlyashd.hukiawards.model.Routes.Categories
 import io.github.onlyashd.hukiawards.model.Strings
 import io.github.onlyashd.hukiawards.model.UserProfile
+import io.github.onlyashd.hukiawards.shared.AppConfig
 import io.github.onlyashd.hukiawards.ui.components.AdminsManagementSubScreen
 import io.github.onlyashd.hukiawards.ui.components.CategoriesManagementSubScreen
 import io.github.onlyashd.hukiawards.ui.components.GlobalStatsCard
@@ -169,6 +170,26 @@ fun AdminDashboard(
                             )
                         },
                         onClick = onLogoutRequested
+                    )
+
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+
+                    DropdownMenuItem(
+                        enabled = false,
+                        text = {
+                            Text(
+                                text = "v${AppConfig.VERSION}",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f),
+                            )
+                        },
+                        leadingIcon = {
+                            Icon(
+                                Icons.Default.Info,
+                                contentDescription = "Info"
+                            )
+                        },
+                        onClick = {}
                     )
                 }
             )

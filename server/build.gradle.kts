@@ -31,6 +31,7 @@ dependencies {
     implementation(libs.ktor.server.auth.jwt)
 
     implementation(libs.ktor.server.content.negotiation)
+    implementation(libs.ktor.server.compression)
     implementation(libs.ktor.client.content.negotiation)
     implementation(libs.ktor.serialization.kotlinx.json)
     implementation(libs.ktor.client.jvm)

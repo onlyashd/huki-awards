@@ -26,7 +26,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import io.github.onlyashd.hukiawards.model.UserProfile
-import io.github.onlyashd.hukiawards.shared.AppConfig
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -41,25 +40,15 @@ fun SmallTopAppBar(
     CenterAlignedTopAppBar(
         title = title,
         navigationIcon = {
-            Box {
-                AsyncImage(
-                    model = logoUrl
-                        ?: "https://static-cdn.jtvnw.net/jtv_user_pictures/7225fcae-f28e-4fa9-a754-5cc2db25c83c-profile_image-70x70.png",
-                    contentDescription = null,
-                    modifier = Modifier
-                        .padding(start = 12.dp)
-                        .size(36.dp)
-                        .clip(CircleShape)
-                )
-                Text(
-                    text = AppConfig.VERSION,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f),
-                    modifier = Modifier
-                        .align(Alignment.BottomEnd)
-                        .padding(end = 0.dp, bottom = 0.dp)
-                )
-            }
+            AsyncImage(
+                model = logoUrl
+                    ?: "https://static-cdn.jtvnw.net/jtv_user_pictures/7225fcae-f28e-4fa9-a754-5cc2db25c83c-profile_image-70x70.png",
+                contentDescription = null,
+                modifier = Modifier
+                    .padding(start = 12.dp)
+                    .size(36.dp)
+                    .clip(CircleShape)
+            )
         },
         actions = {
             if (profile != null) {
