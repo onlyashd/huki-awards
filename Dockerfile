@@ -10,6 +10,13 @@ RUN ./gradlew :server:buildFatJar --no-daemon
 # Stage 2: Run the application
 FROM eclipse-temurin:21-jre-jammy
 EXPOSE 8080
+
+# Install libraries required for AWT/ImageIO (used by ImageService)
+RUN apt-get update && apt-get install -y \
+    fontconfig \
+    libfreetype6 \
+    && rm -rf /var/lib/apt/lists/*
+
 RUN mkdir /app
 
 # Copy the generated JAR from the server module's build directory

@@ -1,7 +1,7 @@
 package io.github.onlyashd.hukiawards.model
 
 enum class Routes(val path: String) {
-    Server("https://huki-awards.onrender.com"),
+    Server("https://huki-awards-backend.onrender.com"),
     Api("/api"),
     Admin("/admin"),
     CallbackDiscord("/callback/discord"),

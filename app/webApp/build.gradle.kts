@@ -36,16 +36,6 @@ kotlin {
             implementation(compose.material3)
             implementation(compose.components.resources)
             implementation(libs.compose.material.icons.extended)
-            implementation(libs.coil)
-            implementation(libs.coil.network)
-            implementation(libs.kotlinx.datetime)
-
-            implementation(libs.ktor.client.core)
-            implementation(libs.ktor.client.content.negotiation)
-            implementation(libs.ktor.serialization.kotlinx.json)
-
-            implementation(libs.sentry.kotlin.multiplatform)
-            implementation(libs.napier)
         }
 
         wasmJsMain.dependencies {
