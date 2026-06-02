@@ -26,6 +26,7 @@ import io.github.onlyashd.hukiawards.model.Routes.Profile
 import io.github.onlyashd.hukiawards.model.Routes.Search
 import io.github.onlyashd.hukiawards.model.Routes.Settings
 import io.github.onlyashd.hukiawards.model.Routes.Share
+import io.github.onlyashd.hukiawards.model.Routes.ShareDiscord
 import io.github.onlyashd.hukiawards.model.Routes.Stats
 import io.github.onlyashd.hukiawards.model.Routes.Users
 import io.github.onlyashd.hukiawards.model.Routes.Vote
@@ -44,6 +45,7 @@ import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.bearerAuth
 import io.ktor.client.request.forms.submitForm
+import io.ktor.client.request.forms.submitFormWithBinaryData
 import io.ktor.client.request.get
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentDisposition
@@ -144,6 +146,7 @@ fun Route.discordRoutes(httpClient: HttpClient) {
 
         val username = discordProfile.username.lowercase()
         val name = discordProfile.name ?: username
+        val discordId = discordProfile.id
         val avatarUrl = if (discordProfile.avatarUrl != null) {
             "https://cdn.discordapp.com/avatars/${discordProfile.id}/${discordProfile.avatarUrl}.png"
         } else {
@@ -165,6 +168,7 @@ fun Route.discordRoutes(httpClient: HttpClient) {
                     it[UsersTable.role] = role
                     it[UsersTable.name] = name
                     it[UsersTable.avatarUrl] = avatarUrl
+                    it[UsersTable.discordId] = discordId
                 }
                 id
             } else {
@@ -174,6 +178,7 @@ fun Route.discordRoutes(httpClient: HttpClient) {
                     it[UsersTable.name] = name
                     it[UsersTable.avatarUrl] = avatarUrl
                     it[UsersTable.role] = role
+                    it[UsersTable.discordId] = discordId
                 }[UsersTable.id]
             }
         }
@@ -198,7 +203,11 @@ fun Route.discordRoutes(httpClient: HttpClient) {
     }
 }
 
-fun Route.publicRoutes(igdbService: IgdbService, imageService: ImageService) {
+fun Route.publicRoutes(
+    httpClient: HttpClient,
+    igdbService: IgdbService,
+    imageService: ImageService
+) {
     // HTML Landing Page for Sharing (OpenGraph)
     get("${Share.path}/{id}") {
         val idStr = call.parameters["id"] ?: return@get call.respond(HttpStatusCode.BadRequest)
@@ -214,7 +223,8 @@ fun Route.publicRoutes(igdbService: IgdbService, imageService: ImageService) {
                     id = it[UsersTable.id].toString(),
                     name = it[UsersTable.name] ?: "Usuário",
                     username = it[UsersTable.username] ?: "",
-                    avatarUrl = it[UsersTable.avatarUrl] ?: ""
+                    avatarUrl = it[UsersTable.avatarUrl] ?: "",
+                    discordId = it[UsersTable.discordId] ?: ""
                 )
             }.singleOrNull()
         } ?: return@get call.respond(HttpStatusCode.NotFound)
@@ -275,7 +285,7 @@ fun Route.publicRoutes(igdbService: IgdbService, imageService: ImageService) {
     }
 
     route(Api.path) {
-        imageRoutes(imageService)
+        imageRoutes(httpClient, imageService)
 
         // Public share route (PNG)
         get("${Share.path}/{id}") {
@@ -293,7 +303,8 @@ fun Route.publicRoutes(igdbService: IgdbService, imageService: ImageService) {
                         id = it[UsersTable.id].toString(),
                         name = it[UsersTable.name] ?: "",
                         username = it[UsersTable.username] ?: "",
-                        avatarUrl = it[UsersTable.avatarUrl] ?: ""
+                        avatarUrl = it[UsersTable.avatarUrl] ?: "",
+                        discordId = it[UsersTable.discordId] ?: ""
                     )
                 }.singleOrNull()
             } ?: return@get call.respond(HttpStatusCode.NotFound, "User profile not found")
@@ -325,9 +336,11 @@ fun Route.publicRoutes(igdbService: IgdbService, imageService: ImageService) {
                 SettingsTable.selectAll().singleOrNull()
             }
             val eventName = settings?.get(SettingsTable.eventName) ?: "Huki Awards 2026"
+            val phase = settings?.get(SettingsTable.phase) ?: "NOMINATION"
 
             // Generate Image
-            val image = imageService.generateVotingSummary(eventName, profile, categories, votes)
+            val image =
+                imageService.generateVotingSummary(eventName, profile, categories, votes, phase)
 
             // Respond with bytes
             val outputStream = ByteArrayOutputStream()
@@ -365,7 +378,7 @@ fun Route.publicRoutes(igdbService: IgdbService, imageService: ImageService) {
     }
 }
 
-private fun Route.imageRoutes(imageService: ImageService) {
+private fun Route.imageRoutes(httpClient: HttpClient, imageService: ImageService) {
     authenticate(AUTH_JWT) {
         get(Share.path) {
             val user = call.principal<UserPrincipal>()
@@ -378,7 +391,8 @@ private fun Route.imageRoutes(imageService: ImageService) {
                         id = it[UsersTable.id].toString(),
                         name = it[UsersTable.name] ?: "",
                         username = it[UsersTable.username] ?: "",
-                        avatarUrl = it[UsersTable.avatarUrl] ?: ""
+                        avatarUrl = it[UsersTable.avatarUrl] ?: "",
+                        discordId = it[UsersTable.discordId] ?: ""
                     )
                 }.singleOrNull()
             } ?: return@get call.respond(HttpStatusCode.NotFound, "User profile not found")
@@ -410,14 +424,108 @@ private fun Route.imageRoutes(imageService: ImageService) {
                 SettingsTable.selectAll().singleOrNull()
             }
             val eventName = settings?.get(SettingsTable.eventName) ?: "Huki Awards 2026"
+            val phase = settings?.get(SettingsTable.phase) ?: "NOMINATION"
 
             // Generate Image
-            val image = imageService.generateVotingSummary(eventName, profile, categories, votes)
+            val image =
+                imageService.generateVotingSummary(eventName, profile, categories, votes, phase)
 
             // Respond with bytes
             val outputStream = ByteArrayOutputStream()
             ImageIO.write(image, "png", outputStream)
             call.respondBytes(outputStream.toByteArray(), ContentType.Image.PNG)
+        }
+
+        post(ShareDiscord.path) {
+            val user = call.principal<UserPrincipal>()
+                ?: return@post call.respond(HttpStatusCode.Unauthorized)
+
+            val webhookUrl = System.getenv("DISCORD_WEBHOOK_URL")
+            if (webhookUrl.isNullOrBlank()) {
+                return@post call.respond(
+                    HttpStatusCode.InternalServerError,
+                    "Discord Webhook not configured"
+                )
+            }
+
+            // Fetch data (same as GET)
+            val profile = transaction {
+                UsersTable.selectAll().where { UsersTable.id eq user.userId }.map {
+                    UserProfile(
+                        id = it[UsersTable.id].toString(),
+                        name = it[UsersTable.name] ?: "",
+                        username = it[UsersTable.username] ?: "",
+                        avatarUrl = it[UsersTable.avatarUrl] ?: "",
+                        discordId = it[UsersTable.discordId] ?: "",
+                    )
+                }.singleOrNull()
+            } ?: return@post call.respond(HttpStatusCode.NotFound, "User profile not found")
+
+            val categories = transaction {
+                CategoriesTable.selectAll().orderBy(CategoriesTable.weight to SortOrder.ASC)
+                    .map {
+                        Category(
+                            id = it[CategoriesTable.id].toString(),
+                            name = it[CategoriesTable.name] ?: "",
+                            description = it[CategoriesTable.description] ?: "",
+                            weight = it[CategoriesTable.weight]
+                        )
+                    }
+            }
+
+            val votes = transaction {
+                VotesTable.selectAll().where { VotesTable.userId eq user.userId }.map {
+                    VoteRequest(
+                        categoryId = it[VotesTable.categoryId].toString(),
+                        igdbGameId = it[VotesTable.igdbGameId],
+                        gameName = it[VotesTable.gameName] ?: "",
+                        gameCoverUrl = it[VotesTable.gameCoverUrl]
+                    )
+                }
+            }
+
+            val settings = transaction {
+                SettingsTable.selectAll().singleOrNull()
+            }
+            val eventName = settings?.get(SettingsTable.eventName) ?: "Huki Awards 2026"
+            val phase = settings?.get(SettingsTable.phase) ?: "NOMINATION"
+
+            // Generate Image
+            val image =
+                imageService.generateVotingSummary(eventName, profile, categories, votes, phase)
+
+            val outputStream = ByteArrayOutputStream()
+            ImageIO.write(image, "png", outputStream)
+            val bytes = outputStream.toByteArray()
+
+            // Send to Discord Webhook
+            try {
+                val response = httpClient.submitFormWithBinaryData(
+                    url = webhookUrl,
+                    formData = io.ktor.client.request.forms.formData {
+                        append("file", bytes, io.ktor.http.Headers.build {
+                            append(HttpHeaders.ContentDisposition, "filename=\"summary.png\"")
+                            append(HttpHeaders.ContentType, "image/png")
+                        })
+                        val actionLabel = if (phase == "VOTING") "voto" else "indicação"
+                        append(
+                            "content",
+                            "Novo $actionLabel de <@${profile.discordId}>!"
+                        )
+                    }
+                )
+
+                if (response.status.isSuccess()) {
+                    call.respond(HttpStatusCode.OK, "Shared to Discord successfully")
+                } else {
+                    val errorBody = response.bodyAsText()
+                    logger.error { "Discord Webhook failed: $errorBody" }
+                    call.respond(HttpStatusCode.InternalServerError, "Failed to send to Discord")
+                }
+            } catch (e: Exception) {
+                logger.error(e) { "Error sending to Discord Webhook" }
+                call.respond(HttpStatusCode.InternalServerError, "Error sending to Discord")
+            }
         }
     }
 }
@@ -541,6 +649,7 @@ private fun Route.profileRoutes() {
                         name = it[UsersTable.name] ?: "",
                         username = it[UsersTable.username] ?: "",
                         avatarUrl = it[UsersTable.avatarUrl] ?: "",
+                        discordId = it[UsersTable.discordId] ?: ""
                     )
                 }.singleOrNull()
             }
@@ -564,6 +673,7 @@ private fun Route.profileRoutes() {
                         name = it[UsersTable.name] ?: "",
                         username = it[UsersTable.username] ?: "",
                         avatarUrl = it[UsersTable.avatarUrl] ?: "",
+                        discordId = it[UsersTable.discordId] ?: ""
                     )
                 }.singleOrNull()
             }
@@ -600,7 +710,7 @@ private fun Route.voteRoutes() {
                         )
                     }
                 } catch (e: Exception) {
-                    logger.error("Error fetching votes for user $targetUserId", e)
+                    logger.error { "Error fetching votes for user $targetUserId\n${e.stackTraceToString()}" }
                     emptyList()
                 }
             }
@@ -719,7 +829,8 @@ private fun Route.adminRoutes(imageService: ImageService) {
                                 id = it[UsersTable.id].toString(),
                                 name = it[UsersTable.name] ?: "",
                                 username = it[UsersTable.username] ?: "",
-                                avatarUrl = it[UsersTable.avatarUrl] ?: ""
+                                avatarUrl = it[UsersTable.avatarUrl] ?: "",
+                                discordId = it[UsersTable.discordId] ?: "",
                             )
                         }
                     }

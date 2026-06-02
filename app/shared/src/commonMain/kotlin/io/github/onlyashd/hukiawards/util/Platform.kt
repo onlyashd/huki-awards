@@ -1,3 +1,5 @@
+@file:Suppress("KotlinNoActualForExpect")
+
 package io.github.onlyashd.hukiawards.util
 
 expect fun downloadFile(

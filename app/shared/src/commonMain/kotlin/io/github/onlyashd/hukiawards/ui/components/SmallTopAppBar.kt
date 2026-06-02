@@ -11,7 +11,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
@@ -26,6 +25,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import io.github.onlyashd.hukiawards.model.UserProfile
+import io.github.onlyashd.hukiawards.util.colors
+import io.github.onlyashd.hukiawards.util.typography
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -66,8 +67,8 @@ fun SmallTopAppBar(
                     ) {
                         Text(
                             text = profile.name.ifEmpty { profile.username },
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer,
+                            style = typography().bodyMedium,
+                            color = colors().onPrimaryContainer,
                             modifier = Modifier.padding(end = 8.dp)
                         )
 
@@ -83,13 +84,13 @@ fun SmallTopAppBar(
                             Surface(
                                 modifier = Modifier.size(32.dp),
                                 shape = CircleShape,
-                                color = MaterialTheme.colorScheme.primary
+                                color = colors().primary
                             ) {
                                 Box(contentAlignment = Alignment.Center) {
                                     Text(
                                         text = profile.username.take(1).uppercase(),
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = MaterialTheme.colorScheme.onPrimary
+                                        style = typography().bodyMedium,
+                                        color = colors().onPrimary
                                     )
                                 }
                             }
@@ -107,8 +108,8 @@ fun SmallTopAppBar(
             }
         },
         colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer,
-            titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
+            containerColor = colors().primaryContainer,
+            titleContentColor = colors().onPrimaryContainer
         )
     )
 }

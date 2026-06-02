@@ -10,6 +10,7 @@ enum class Routes(val path: String) {
     LoginDiscord("/login/discord"),
     Logout("/logout"),
     Share("/share"),
+    ShareDiscord("/share/discord"),
     Top10("/top10"),
     Profile("/profile"),
     Vote("/vote"),
@@ -25,7 +26,6 @@ enum class Routes(val path: String) {
     fun subPath(sub: Routes) = this.path + sub.path
     fun byId(id: String) = "${this.path}/$id"
     fun byId() = "${this.path}/{id}"
-    fun params(params: String) = "${this.path}?$params"
 
     companion object {
         fun String.subPath(sub: Routes) = "${this}/${sub.path}"

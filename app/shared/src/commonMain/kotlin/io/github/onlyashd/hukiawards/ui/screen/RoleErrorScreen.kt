@@ -6,12 +6,13 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import io.github.onlyashd.hukiawards.util.colors
+import io.github.onlyashd.hukiawards.util.typography
 
 @Composable
 fun RoleErrorScreen(onLogoutRequested: () -> Unit) {
@@ -23,12 +24,12 @@ fun RoleErrorScreen(onLogoutRequested: () -> Unit) {
             ) {
                 Text(
                     text = "Acesso Inválido",
-                    style = MaterialTheme.typography.headlineMedium,
-                    color = MaterialTheme.colorScheme.error
+                    style = typography().headlineMedium,
+                    color = colors().error
                 )
                 Text(
                     text = "Sua conta foi autenticada, mas nenhuma permissão válida de Admin ou Usuário foi encontrada no seu perfil.",
-                    style = MaterialTheme.typography.bodyMedium,
+                    style = typography().bodyMedium,
                     modifier = Modifier.padding(vertical = 16.dp)
                 )
                 Button(onClick = onLogoutRequested) {

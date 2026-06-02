@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -26,6 +25,8 @@ import io.github.onlyashd.hukiawards.model.Settings
 import io.github.onlyashd.hukiawards.model.Strings
 import io.github.onlyashd.hukiawards.util.colors
 import io.github.onlyashd.hukiawards.util.formatToFriendlyDateTime
+import io.github.onlyashd.hukiawards.util.shapes
+import io.github.onlyashd.hukiawards.util.typography
 
 @Composable
 fun LoginScreen(
@@ -52,7 +53,7 @@ fun LoginScreen(
         Text(
             text = settings?.eventName ?: "Huki Awards",
             fontWeight = FontWeight.Bold,
-            style = MaterialTheme.typography.headlineLarge,
+            style = typography().headlineLarge,
             textAlign = TextAlign.Center
         )
 
@@ -61,13 +62,13 @@ fun LoginScreen(
 
         Surface(
             color = statusColor.copy(alpha = 0.1f),
-            shape = MaterialTheme.shapes.small,
+            shape = shapes().small,
             modifier = Modifier.padding(vertical = 8.dp)
         ) {
             Text(
                 text = statusText,
                 color = statusColor,
-                style = MaterialTheme.typography.labelLarge,
+                style = typography().labelLarge,
                 modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
                 fontWeight = FontWeight.Bold
             )
@@ -89,12 +90,12 @@ fun LoginScreen(
 
         Text(
             text = "Fase atual: $phaseName",
-            style = MaterialTheme.typography.titleMedium,
+            style = typography().titleMedium,
             fontWeight = FontWeight.SemiBold
         )
         Text(
             text = phaseDesc,
-            style = MaterialTheme.typography.bodyMedium,
+            style = typography().bodyMedium,
             textAlign = TextAlign.Center,
             color = colors().onSurfaceVariant,
             modifier = Modifier.padding(top = 4.dp)
@@ -107,18 +108,18 @@ fun LoginScreen(
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("Início", style = MaterialTheme.typography.labelMedium)
+                    Text("Início", style = typography().labelMedium)
                     Text(
                         settings.votingStart?.formatToFriendlyDateTime() ?: "-",
-                        style = MaterialTheme.typography.bodyLarge,
+                        style = typography().bodyLarge,
                         fontWeight = FontWeight.Medium
                     )
                 }
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("Término", style = MaterialTheme.typography.labelMedium)
+                    Text("Término", style = typography().labelMedium)
                     Text(
                         settings.votingEnd?.formatToFriendlyDateTime() ?: "-",
-                        style = MaterialTheme.typography.bodyLarge,
+                        style = typography().bodyLarge,
                         fontWeight = FontWeight.Medium
                     )
                 }
@@ -130,15 +131,15 @@ fun LoginScreen(
         Button(
             onClick = onLoginRequested,
             modifier = Modifier.height(56.dp).fillMaxWidth(0.6f),
-            shape = MaterialTheme.shapes.medium
+            shape = shapes().medium
         ) {
-            Text("Entrar com Discord", style = MaterialTheme.typography.titleMedium)
+            Text("Entrar com Discord", style = typography().titleMedium)
         }
 
         Spacer(modifier = Modifier.height(16.dp))
         Text(
             "Faça login para participar e deixar seu voto!",
-            style = MaterialTheme.typography.labelSmall,
+            style = typography().labelSmall,
             color = colors().onSurfaceVariant.copy(alpha = 0.7f)
         )
     }

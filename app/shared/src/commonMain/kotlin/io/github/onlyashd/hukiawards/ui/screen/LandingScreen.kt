@@ -15,7 +15,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -29,6 +28,8 @@ import io.github.onlyashd.hukiawards.model.Settings
 import io.github.onlyashd.hukiawards.model.Strings
 import io.github.onlyashd.hukiawards.util.colors
 import io.github.onlyashd.hukiawards.util.formatToFriendlyDateTime
+import io.github.onlyashd.hukiawards.util.shapes
+import io.github.onlyashd.hukiawards.util.typography
 
 @Composable
 fun LandingScreen(
@@ -55,7 +56,7 @@ fun LandingScreen(
         Text(
             text = settings?.eventName ?: "Huki Awards",
             fontWeight = FontWeight.Bold,
-            style = MaterialTheme.typography.displayMedium,
+            style = typography().displayMedium,
             textAlign = TextAlign.Center
         )
 
@@ -67,13 +68,13 @@ fun LandingScreen(
 
         Surface(
             color = statusColor.copy(alpha = 0.1f),
-            shape = MaterialTheme.shapes.medium,
+            shape = shapes().medium,
             modifier = Modifier.padding(vertical = 8.dp)
         ) {
             Text(
                 text = statusText,
                 color = statusColor,
-                style = MaterialTheme.typography.titleMedium,
+                style = typography().titleMedium,
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
                 fontWeight = FontWeight.Bold
             )
@@ -103,13 +104,13 @@ fun LandingScreen(
             ) {
                 Text(
                     text = "Fase: $phaseName",
-                    style = MaterialTheme.typography.headlineSmall,
+                    style = typography().headlineSmall,
                     fontWeight = FontWeight.Bold
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
                     text = phaseDesc,
-                    style = MaterialTheme.typography.bodyLarge,
+                    style = typography().bodyLarge,
                     textAlign = TextAlign.Center,
                     color = colors().onSurfaceVariant
                 )
@@ -132,16 +133,16 @@ fun LandingScreen(
         Button(
             onClick = onGoToLogin,
             modifier = Modifier.height(64.dp).fillMaxWidth(0.5f),
-            shape = MaterialTheme.shapes.large,
+            shape = shapes().large,
             elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp)
         ) {
-            Text("Participar Agora", style = MaterialTheme.typography.titleLarge)
+            Text("Participar Agora", style = typography().titleLarge)
         }
 
         Spacer(modifier = Modifier.height(16.dp))
         Text(
             "Faça login com sua conta do Discord",
-            style = MaterialTheme.typography.labelMedium,
+            style = typography().labelMedium,
             color = colors().onSurfaceVariant.copy(alpha = 0.6f)
         )
     }
@@ -152,12 +153,12 @@ private fun DateInfoColumn(label: String, date: String) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Text(
             text = label,
-            style = MaterialTheme.typography.labelLarge,
+            style = typography().labelLarge,
             color = colors().onSurfaceVariant
         )
         Text(
             text = date,
-            style = MaterialTheme.typography.titleMedium,
+            style = typography().titleMedium,
             fontWeight = FontWeight.Bold
         )
     }

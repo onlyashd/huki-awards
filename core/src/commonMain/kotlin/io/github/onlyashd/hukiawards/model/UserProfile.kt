@@ -7,5 +7,6 @@ data class UserProfile(
     val id: String,
     val name: String,
     val username: String,
-    val avatarUrl: String? = null
+    val avatarUrl: String? = null,
+    val discordId: String? = null,
 )

@@ -4,9 +4,12 @@ import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -16,25 +19,30 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.ExitToApp
-import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SuggestionChip
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -48,23 +56,33 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
+import huki_awards.app.shared.generated.resources.Res
 import io.github.onlyashd.hukiawards.client.ApiClient
 import io.github.onlyashd.hukiawards.model.Category
 import io.github.onlyashd.hukiawards.model.IgdbGameMetadata
 import io.github.onlyashd.hukiawards.model.Routes
+import io.github.onlyashd.hukiawards.model.Routes.Companion.subPath
 import io.github.onlyashd.hukiawards.model.Settings
 import io.github.onlyashd.hukiawards.model.UserProfile
 import io.github.onlyashd.hukiawards.model.VoteRequest
 import io.github.onlyashd.hukiawards.shared.AppConfig
 import io.github.onlyashd.hukiawards.ui.components.SmallTopAppBar
 import io.github.onlyashd.hukiawards.util.AppLogger
+import io.github.onlyashd.hukiawards.util.colors
 import io.github.onlyashd.hukiawards.util.formatToFriendlyDateTime
+import io.github.onlyashd.hukiawards.util.typography
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.ExperimentalResourceApi
 
+@OptIn(ExperimentalResourceApi::class)
 @Composable
 fun UserDashboard(
     api: ApiClient,
@@ -81,6 +99,7 @@ fun UserDashboard(
     var showOverview by remember { mutableStateOf(false) }
     var isLoading by remember { mutableStateOf(true) }
 
+    val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
 
     // Fetch initial category options and user progress on structural mount
@@ -107,6 +126,7 @@ fun UserDashboard(
     }
 
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             SmallTopAppBar(
                 title = {
@@ -115,8 +135,8 @@ fun UserDashboard(
                         if (settings?.showDatesToUsers == true && settings?.votingEnd != null) {
                             Text(
                                 text = "Encerra em: ${settings?.votingEnd?.formatToFriendlyDateTime()}",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+                                style = typography().labelSmall,
+                                color = colors().onPrimaryContainer.copy(alpha = 0.7f)
                             )
                         }
                     }
@@ -135,21 +155,23 @@ fun UserDashboard(
                         onClick = onLogoutRequested
                     )
 
-                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                    HorizontalDivider(color = colors().outlineVariant.copy(alpha = 0.5f))
 
                     DropdownMenuItem(
                         enabled = false,
                         text = {
                             Text(
                                 text = "v${AppConfig.VERSION}",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f),
+                                style = typography().labelSmall,
+                                color = colors().outlineVariant.copy(alpha = 0.7f),
                             )
                         },
                         leadingIcon = {
-                            Icon(
-                                Icons.Default.Info,
-                                contentDescription = "Info"
+                            AsyncImage(
+                                model = Res.getUri("drawable/tag.png"),
+                                contentDescription = "Versão",
+                                modifier = Modifier.size(20.dp),
+                                colorFilter = ColorFilter.tint(LocalContentColor.current)
                             )
                         },
                         onClick = {}
@@ -180,7 +202,7 @@ fun UserDashboard(
 
                         Text(
                             text = "Categoria ${currentCategoryIndex + 1} de ${categories.size}",
-                            style = MaterialTheme.typography.labelLarge
+                            style = typography().labelLarge
                         )
 
                         val allVoted = userVotes.size == categories.size
@@ -196,7 +218,9 @@ fun UserDashboard(
                             },
                             enabled = (currentCategoryIndex < categories.size - 1 && currentCategoryVoted) || allVoted
                         ) {
-                            Text(if (currentCategoryIndex == categories.size - 1) "Finalizar" else "Próxima")
+                            val nextText =
+                                if (currentCategoryIndex == categories.size - 1) "Finalizar" else "Próxima"
+                            Text(nextText)
                         }
                     }
                 }
@@ -216,6 +240,7 @@ fun UserDashboard(
                     profile = profile,
                     categories = categories,
                     userVotes = userVotes,
+                    isFinalPhase = settings?.phase == "VOTING",
                     onEditRequested = {
                         showOverview = false
                         currentCategoryIndex = 0
@@ -237,11 +262,12 @@ fun UserDashboard(
                     onShareRequested = {
                         coroutineScope.launch {
                             try {
-                                val origin = io.github.onlyashd.hukiawards.util.getOrigin()
-                                val shareUrl = "$origin${Routes.Share.path}/${profile?.id}"
-                                io.github.onlyashd.hukiawards.util.copyToClipboard(shareUrl)
+                                api.post<String>(Routes.ShareDiscord, "")
+                                AppLogger.i("Compartilhado com sucesso no Discord!")
+                                snackbarHostState.showSnackbar("Compartilhado com sucesso no Discord!")
                             } catch (e: Exception) {
-                                AppLogger.e("Falha ao copiar link: ${e.message}")
+                                AppLogger.e("Falha ao compartilhar no Discord: ${e.message}")
+                                snackbarHostState.showSnackbar("Falha ao compartilhar: ${e.message}")
                             }
                         }
                     }
@@ -254,13 +280,13 @@ fun UserDashboard(
                 ) {
                     Text(
                         "A votação está encerrada!",
-                        style = MaterialTheme.typography.headlineMedium
+                        style = typography().headlineMedium
                     )
                     if (settings?.showDatesToUsers == true && settings?.votingEnd != null) {
                         Text(
                             "Encerrou em: ${settings?.votingEnd?.formatToFriendlyDateTime()}",
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            style = typography().bodyLarge,
+                            color = colors().onSurfaceVariant
                         )
                     }
                     Spacer(modifier = Modifier.height(24.dp))
@@ -318,43 +344,230 @@ fun UserDashboard(
                     val currentCategory = categories[index]
                     val existingVote = userVotes.find { it.categoryId == currentCategory.id }
 
-                    CategoryVotingRow(
-                        category = currentCategory,
-                        initialVote = existingVote,
-                        onVoteSubmitted = { gameId, gameName, gameCoverUrl ->
-                            coroutineScope.launch {
-                                try {
-                                    api.post<VoteRequest>(
-                                        Routes.Vote, VoteRequest(
+                    if (settings?.phase == "VOTING") {
+                        FinalVotingGrid(
+                            category = currentCategory,
+                            initialVote = existingVote,
+                            onVoteSubmitted = { gameId: Long, gameName: String, gameCoverUrl: String ->
+                                coroutineScope.launch {
+                                    try {
+                                        api.post<VoteRequest>(
+                                            Routes.Vote, VoteRequest(
+                                                categoryId = currentCategory.id!!,
+                                                igdbGameId = gameId,
+                                                gameName = gameName,
+                                                gameCoverUrl = gameCoverUrl,
+                                                targetUserId = targetUserId
+                                            )
+                                        )
+                                        // Update local state
+                                        val newVote = VoteRequest(
                                             categoryId = currentCategory.id!!,
                                             igdbGameId = gameId,
                                             gameName = gameName,
                                             gameCoverUrl = gameCoverUrl,
                                             targetUserId = targetUserId
                                         )
+                                        userVotes =
+                                            userVotes.filterNot { it.categoryId == currentCategory.id } + newVote
+                                    } catch (e: Exception) {
+                                        AppLogger.e("Falha ao enviar voto: ${e.message}")
+                                    }
+                                }
+                            },
+                            fetchNominees = {
+                                try {
+                                    api.get<List<IgdbGameMetadata>>(
+                                        Routes.Categories.byId(
+                                            currentCategory.id!!
+                                        ).subPath(Routes.Top10)
                                     )
-                                    // Update local state
-                                    val newVote = VoteRequest(
-                                        categoryId = currentCategory.id!!,
-                                        igdbGameId = gameId,
-                                        gameName = gameName,
-                                        gameCoverUrl = gameCoverUrl,
-                                        targetUserId = targetUserId
-                                    )
-                                    userVotes =
-                                        userVotes.filterNot { it.categoryId == currentCategory.id } + newVote
                                 } catch (e: Exception) {
-                                    AppLogger.e("Falha ao enviar voto: ${e.message}")
+                                    emptyList()
                                 }
                             }
-                        },
-                        searchGamesAction = { query ->
-                            try {
-                                api.getByQuery(Routes.Search, query)
-                            } catch (e: Exception) {
-                                emptyList()
+                        )
+                    } else {
+                        CategoryVotingRow(
+                            category = currentCategory,
+                            initialVote = existingVote,
+                            isFinalPhase = settings?.phase == "VOTING",
+                            onVoteSubmitted = { gameId, gameName, gameCoverUrl ->
+                                coroutineScope.launch {
+                                    try {
+                                        api.post<VoteRequest>(
+                                            Routes.Vote, VoteRequest(
+                                                categoryId = currentCategory.id!!,
+                                                igdbGameId = gameId,
+                                                gameName = gameName,
+                                                gameCoverUrl = gameCoverUrl,
+                                                targetUserId = targetUserId
+                                            )
+                                        )
+                                        // Update local state
+                                        val newVote = VoteRequest(
+                                            categoryId = currentCategory.id!!,
+                                            igdbGameId = gameId,
+                                            gameName = gameName,
+                                            gameCoverUrl = gameCoverUrl,
+                                            targetUserId = targetUserId
+                                        )
+                                        userVotes =
+                                            userVotes.filterNot { it.categoryId == currentCategory.id } + newVote
+                                    } catch (e: Exception) {
+                                        AppLogger.e("Falha ao enviar voto: ${e.message}")
+                                    }
+                                }
+                            },
+                            searchGamesAction = { query ->
+                                try {
+                                    api.getByQuery(Routes.Search, query)
+                                } catch (e: Exception) {
+                                    emptyList()
+                                }
                             }
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun FinalVotingGrid(
+    category: Category,
+    initialVote: VoteRequest?,
+    onVoteSubmitted: (gameId: Long, gameName: String, gameCoverUrl: String) -> Unit,
+    fetchNominees: suspend () -> List<IgdbGameMetadata>
+) {
+    var nominees by remember { mutableStateOf<List<IgdbGameMetadata>>(emptyList()) }
+    var isLoading by remember { mutableStateOf(true) }
+
+    LaunchedEffect(category.id) {
+        isLoading = true
+        nominees = fetchNominees()
+        isLoading = false
+    }
+
+    Column(modifier = Modifier.fillMaxSize()) {
+        Text(
+            text = category.name,
+            style = typography().headlineSmall,
+            fontWeight = FontWeight.Bold
+        )
+        Text(
+            text = category.description,
+            style = typography().bodyMedium,
+            color = colors().onSurfaceVariant,
+            modifier = Modifier.padding(bottom = 16.dp)
+        )
+
+        if (isLoading) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator()
+            }
+        } else {
+            LazyVerticalGrid(
+                columns = GridCells.Fixed(2),
+                contentPadding = PaddingValues(bottom = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                items(nominees) { game ->
+                    val isSelected = initialVote?.igdbGameId == game.id
+                    NomineeCard(
+                        game = game,
+                        isSelected = isSelected,
+                        onClick = {
+                            onVoteSubmitted(game.id, game.name, game.coverUrl)
                         }
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun NomineeCard(
+    game: IgdbGameMetadata,
+    isSelected: Boolean,
+    onClick: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() },
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = if (isSelected)
+                colors().primaryContainer
+            else
+                colors().surfaceVariant.copy(alpha = 0.5f)
+        ),
+        border = if (isSelected)
+            androidx.compose.foundation.BorderStroke(2.dp, colors().primary)
+        else
+            null
+    ) {
+        Column {
+            Box {
+                AsyncImage(
+                    model = game.coverUrl,
+                    contentDescription = game.name,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(180.dp)
+                        .clip(RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp)),
+                    contentScale = ContentScale.Crop
+                )
+                if (isSelected) {
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(8.dp)
+                            .background(
+                                colors().primary,
+                                shape = androidx.compose.foundation.shape.CircleShape
+                            )
+                            .padding(4.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Check,
+                            contentDescription = "Selecionado",
+                            tint = colors().onPrimary,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+                }
+            }
+            Column(modifier = Modifier.padding(8.dp)) {
+                Text(
+                    text = game.name,
+                    style = typography().labelLarge,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Button(
+                    onClick = onClick,
+                    modifier = Modifier.fillMaxWidth(),
+                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
+                    shape = RoundedCornerShape(8.dp),
+                    colors = if (isSelected)
+                        androidx.compose.material3.ButtonDefaults.buttonColors(
+                            containerColor = colors().primary
+                        )
+                    else
+                        androidx.compose.material3.ButtonDefaults.filledTonalButtonColors()
+                ) {
+                    Text(
+                        text = if (isSelected) "Votado" else "Votar",
+                        style = typography().labelMedium
                     )
                 }
             }
@@ -366,19 +579,22 @@ fun UserDashboard(
 fun CategoryVotingRow(
     category: Category,
     initialVote: VoteRequest? = null,
+    isFinalPhase: Boolean = false,
     onVoteSubmitted: (gameId: Long, gameName: String, gameCoverUrl: String) -> Unit,
     searchGamesAction: suspend (query: String) -> List<IgdbGameMetadata>
 ) {
-    var searchQuery by remember(category.id) { mutableStateOf(initialVote?.gameName ?: "") }
+    var searchQuery by remember(category.id) { mutableStateOf("") }
     var searchResults by remember { mutableStateOf(emptyList<IgdbGameMetadata>()) }
     var isSearching by remember { mutableStateOf(false) }
     var showDropdown by remember { mutableStateOf(false) }
 
     val hasVoted = initialVote != null
+    val phaseActionLabel = if (isFinalPhase) "VOTO" else "INDICAÇÃO"
+    val phaseSearchLabel = if (isFinalPhase) "votar" else "indicar"
 
-    // Every single row completely monitors its own independent search lifecycle context
+    // Independent search lifecycle context
     LaunchedEffect(searchQuery) {
-        if (searchQuery.isBlank() || searchQuery == initialVote?.gameName) {
+        if (searchQuery.isBlank()) {
             searchResults = emptyList()
             showDropdown = false
             return@LaunchedEffect
@@ -391,56 +607,126 @@ fun CategoryVotingRow(
         showDropdown = searchResults.isNotEmpty()
     }
 
-    Column(modifier = Modifier.fillMaxWidth()) {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        // --- 1. Category Title & Description ---
         Text(
-            text = category.name,
-            style = MaterialTheme.typography.titleLarge,
-            color = MaterialTheme.colorScheme.primary
+            text = category.name.uppercase(),
+            style = typography().headlineLarge,
+            color = colors().primary,
+            modifier = Modifier.padding(bottom = 4.dp)
         )
-        if (!category.description.isNullOrBlank()) {
+        if (category.description.isNotBlank()) {
             Text(
                 text = category.description,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(bottom = 8.dp)
+                style = typography().bodyMedium,
+                color = colors().onSurfaceVariant,
+                modifier = Modifier.padding(bottom = 16.dp),
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center
             )
         }
 
-        Box {
+        // --- 2. Game Display / Placeholder ---
+        Box(
+            modifier = Modifier
+                .size(200.dp, 270.dp) // Maintain a gaming poster aspect ratio
+                .clip(RoundedCornerShape(12.dp))
+                .background(
+                    if (hasVoted) colors().primaryContainer
+                    else colors().surfaceVariant.copy(alpha = 0.5f)
+                ),
+            contentAlignment = Alignment.Center
+        ) {
+            if (hasVoted) {
+                // Active selection state with cover art
+                Box(modifier = Modifier.fillMaxSize()) {
+                    if (!initialVote.gameCoverUrl.isNullOrBlank()) {
+                        AsyncImage(
+                            model = initialVote.gameCoverUrl,
+                            contentDescription = initialVote.gameName,
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop
+                        )
+                    }
+                    // Bottom title overlay sheet (Game of the Year style)
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .align(Alignment.BottomCenter)
+                            .background(colors().primary.copy(alpha = 0.9f))
+                            .padding(8.dp)
+                    ) {
+                        Text(
+                            text = "$phaseActionLabel SALVO",
+                            style = typography().labelMedium,
+                            color = colors().onPrimary,
+                            modifier = Modifier.align(Alignment.Center)
+                        )
+                    }
+                }
+            } else {
+                // Empty Placeholder state
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.padding(16.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Search,
+                        contentDescription = null,
+                        modifier = Modifier.size(40.dp),
+                        tint = colors().onSurfaceVariant.copy(alpha = 0.6f)
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "Nenhum jogo selecionado",
+                        style = typography().bodySmall,
+                        color = colors().onSurfaceVariant.copy(alpha = 0.8f),
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                    )
+                }
+            }
+        }
+
+        // Selected Game Label display text
+        if (hasVoted) {
+            Text(
+                text = initialVote.gameName,
+                style = typography().titleMedium,
+                modifier = Modifier.padding(vertical = 12.dp),
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+            )
+        } else {
+            Spacer(modifier = Modifier.height(24.dp))
+        }
+
+        // --- 3. Persistent Search Input Field ---
+        Box(modifier = Modifier.fillMaxWidth(0.9f)) {
             OutlinedTextField(
                 value = searchQuery,
                 onValueChange = {
                     searchQuery = it
                     if (it.isBlank()) showDropdown = false
                 },
-                label = { Text(if (hasVoted) "Sua indicação" else "Pesquisar jogo para indicar...") },
+                label = { Text("Pesquisar para alterar/$phaseSearchLabel...") },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
-                colors = if (hasVoted) {
-                    OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = MaterialTheme.colorScheme.primary,
-                        unfocusedBorderColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
-                    )
-                } else {
-                    OutlinedTextFieldDefaults.colors()
-                },
                 trailingIcon = {
                     if (isSearching) {
                         CircularProgressIndicator(
                             modifier = Modifier.size(20.dp),
                             strokeWidth = 2.dp
                         )
-                    } else {
-                        if (searchQuery.isNotEmpty()) {
-                            IconButton(onClick = {
-                                searchQuery = ""
-                                showDropdown = false
-                            }) {
-                                Icon(Icons.Default.Clear, contentDescription = "Clear")
-                            }
-                        } else {
-                            Icon(Icons.Default.Search, contentDescription = "Search")
+                    } else if (searchQuery.isNotEmpty()) {
+                        IconButton(onClick = {
+                            searchQuery = ""
+                            showDropdown = false
+                        }) {
+                            Icon(Icons.Default.Clear, contentDescription = "Limpar")
                         }
+                    } else {
+                        Icon(Icons.Default.Search, contentDescription = "Buscar")
                     }
                 }
             )
@@ -452,7 +738,7 @@ fun CategoryVotingRow(
                     modifier = Modifier.fillMaxWidth(0.9f),
                     properties = androidx.compose.ui.window.PopupProperties(focusable = false)
                 ) {
-                    searchResults.take(10).forEach { game ->
+                    searchResults.take(6).forEach { game ->
                         DropdownMenuItem(
                             text = {
                                 Row(
@@ -464,41 +750,19 @@ fun CategoryVotingRow(
                                             model = game.coverUrl,
                                             contentDescription = null,
                                             modifier = Modifier
-                                                .size(48.dp, 64.dp)
+                                                .size(40.dp, 52.dp)
                                                 .clip(RoundedCornerShape(4.dp)),
                                             contentScale = ContentScale.Crop
                                         )
                                         Spacer(modifier = Modifier.width(12.dp))
                                     }
                                     Column {
-                                        Text(
-                                            text = game.name,
-                                            style = MaterialTheme.typography.bodyLarge
-                                        )
-                                        if (game.genres.isNotEmpty()) {
-                                            Row(
-                                                horizontalArrangement = Arrangement.spacedBy(4.dp),
-                                                modifier = Modifier.padding(top = 4.dp)
-                                            ) {
-                                                game.genres.take(3).forEach { genre ->
-                                                    SuggestionChip(
-                                                        onClick = {},
-                                                        label = {
-                                                            Text(
-                                                                genre,
-                                                                style = MaterialTheme.typography.labelSmall
-                                                            )
-                                                        },
-                                                        modifier = Modifier.height(24.dp)
-                                                    )
-                                                }
-                                            }
-                                        }
+                                        Text(game.name, style = typography().bodyLarge)
                                     }
                                 }
                             },
                             onClick = {
-                                searchQuery = game.name
+                                searchQuery = "" // Clear query to reset field interface state
                                 showDropdown = false
                                 onVoteSubmitted(game.id, game.name, game.coverUrl)
                             }
@@ -507,7 +771,6 @@ fun CategoryVotingRow(
                 }
             }
         }
-
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(16.dp))
     }
 }

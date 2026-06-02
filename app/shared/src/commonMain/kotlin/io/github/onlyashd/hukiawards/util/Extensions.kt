@@ -8,3 +8,6 @@ fun colors() = MaterialTheme.colorScheme
 
 @Composable
 fun typography() = MaterialTheme.typography
+
+@Composable
+fun shapes() = MaterialTheme.shapes

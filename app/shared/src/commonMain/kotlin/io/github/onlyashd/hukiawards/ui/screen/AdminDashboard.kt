@@ -22,7 +22,6 @@ import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Clear
-import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.ThumbUp
@@ -38,7 +37,7 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.NavigationRail
 import androidx.compose.material3.NavigationRailItem
 import androidx.compose.material3.OutlinedTextField
@@ -58,8 +57,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
+import huki_awards.app.shared.generated.resources.Res
 import io.github.onlyashd.hukiawards.client.ApiClient
 import io.github.onlyashd.hukiawards.model.Category
 import io.github.onlyashd.hukiawards.model.GlobalStats
@@ -76,13 +77,16 @@ import io.github.onlyashd.hukiawards.ui.components.SmallTopAppBar
 import io.github.onlyashd.hukiawards.ui.components.VotesManagementSubScreen
 import io.github.onlyashd.hukiawards.util.AppLogger
 import io.github.onlyashd.hukiawards.util.colors
+import io.github.onlyashd.hukiawards.util.typography
 import io.ktor.client.call.body
 import io.ktor.client.request.bearerAuth
 import io.ktor.client.request.get
 import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.ExperimentalResourceApi
 
 enum class AdminScreen { OVERVIEW, CATEGORIES, MANAGE_VOTES, VOTE_AS_USER, SETTINGS, ADMINS }
 
+@OptIn(ExperimentalResourceApi::class)
 @Composable
 fun AdminDashboard(
     api: ApiClient,
@@ -160,7 +164,7 @@ fun AdminDashboard(
                             onToggleUserView()
                         }
                     )
-                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                    HorizontalDivider(color = colors().outlineVariant.copy(alpha = 0.5f))
                     DropdownMenuItem(
                         text = { Text(Strings.LOGOUT) },
                         leadingIcon = {
@@ -172,21 +176,23 @@ fun AdminDashboard(
                         onClick = onLogoutRequested
                     )
 
-                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                    HorizontalDivider(color = colors().outlineVariant.copy(alpha = 0.5f))
 
                     DropdownMenuItem(
                         enabled = false,
                         text = {
                             Text(
                                 text = "v${AppConfig.VERSION}",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f),
+                                style = typography().labelSmall,
+                                color = colors().outlineVariant.copy(alpha = 0.7f),
                             )
                         },
                         leadingIcon = {
-                            Icon(
-                                Icons.Default.Info,
-                                contentDescription = "Info"
+                            AsyncImage(
+                                model = Res.getUri("drawable/tag.png"),
+                                contentDescription = "Versão",
+                                modifier = Modifier.size(20.dp),
+                                colorFilter = ColorFilter.tint(LocalContentColor.current)
                             )
                         },
                         onClick = {}
@@ -227,7 +233,14 @@ fun AdminDashboard(
                         currentScreen = AdminScreen.OVERVIEW
                         refreshStats()
                     },
-                    icon = { Icon(Icons.Default.Info, null) },
+                    icon = {
+                        AsyncImage(
+                            model = Res.getUri("drawable/dashboard.png"),
+                            contentDescription = null,
+                            modifier = Modifier.size(20.dp),
+                            colorFilter = ColorFilter.tint(LocalContentColor.current)
+                        )
+                    },
                     label = { Text(Strings.SUMMARY, color = colors().onBackground) }
                 )
 
@@ -262,7 +275,14 @@ fun AdminDashboard(
                 NavigationRailItem(
                     selected = currentScreen == AdminScreen.ADMINS,
                     onClick = { currentScreen = AdminScreen.ADMINS },
-                    icon = { Icon(Icons.Default.Person, null) },
+                    icon = {
+                        AsyncImage(
+                            model = Res.getUri("drawable/admin.png"),
+                            contentDescription = "Admins",
+                            modifier = Modifier.size(20.dp),
+                            colorFilter = ColorFilter.tint(LocalContentColor.current)
+                        )
+                    },
                     label = { Text(Strings.ADMINS, color = colors().onBackground) }
                 )
             }
@@ -428,7 +448,7 @@ fun AdminDashboard(
                             Column {
                                 Text(
                                     Strings.VOTE_AS_USER_FOR,
-                                    style = MaterialTheme.typography.titleMedium
+                                    style = typography().titleMedium
                                 )
                                 Spacer(modifier = Modifier.height(16.dp))
                                 LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -437,7 +457,7 @@ fun AdminDashboard(
                                             modifier = Modifier.fillMaxWidth()
                                                 .clickable { selectedUser = user },
                                             colors = CardDefaults.cardColors(
-                                                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(
+                                                containerColor = colors().surfaceVariant.copy(
                                                     alpha = 0.5f
                                                 )
                                             )
@@ -456,11 +476,11 @@ fun AdminDashboard(
                                                 Column {
                                                     Text(
                                                         user.name,
-                                                        style = MaterialTheme.typography.bodyLarge
+                                                        style = typography().bodyLarge
                                                     )
                                                     Text(
                                                         "@${user.username}",
-                                                        style = MaterialTheme.typography.labelMedium
+                                                        style = typography().labelMedium
                                                     )
                                                 }
                                             }
@@ -476,7 +496,7 @@ fun AdminDashboard(
                                     }
                                     Text(
                                         Strings.VOTING_AS.replace("%s", selectedUser?.name ?: ""),
-                                        style = MaterialTheme.typography.titleMedium
+                                        style = typography().titleMedium
                                     )
                                 }
                                 Box(modifier = Modifier.fillMaxSize().padding(top = 16.dp)) {

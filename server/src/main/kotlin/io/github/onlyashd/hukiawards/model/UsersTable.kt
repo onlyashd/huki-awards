@@ -9,6 +9,7 @@ object UsersTable : Table("users") {
     val avatarUrl = text("avatar_url").nullable()
     val provider = text("provider").default("DISCORD")
     val role = text("role").default("USER")
+    val discordId = text("discord_id").nullable()
 
     override val primaryKey = PrimaryKey(id)
 }

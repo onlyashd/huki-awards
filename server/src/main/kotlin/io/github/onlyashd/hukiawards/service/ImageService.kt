@@ -4,7 +4,11 @@ import io.github.onlyashd.hukiawards.model.Category
 import io.github.onlyashd.hukiawards.model.LeaderboardEntry
 import io.github.onlyashd.hukiawards.model.UserProfile
 import io.github.onlyashd.hukiawards.model.VoteRequest
-import java.awt.*
+import java.awt.BasicStroke
+import java.awt.Color
+import java.awt.Font
+import java.awt.Graphics2D
+import java.awt.RenderingHints
 import java.awt.geom.Ellipse2D
 import java.awt.geom.RoundRectangle2D
 import java.awt.image.BufferedImage
@@ -231,7 +235,8 @@ class ImageService {
         eventName: String,
         profile: UserProfile,
         categories: List<Category>,
-        votes: List<VoteRequest>
+        votes: List<VoteRequest>,
+        phase: String = "NOMINATION"
     ): BufferedImage {
         val width = 800
         val headerHeight = 150
@@ -249,13 +254,13 @@ class ImageService {
         g.fillRect(0, 0, width, height)
 
         // Header
-        drawHeader(g, eventName, profile)
+        drawHeader(g, eventName, profile, phase)
 
         // Votes
         var currentY = headerHeight
         for (category in categories) {
             val vote = votes.find { it.categoryId == category.id }
-            drawVoteRow(g, category, vote, currentY, width, rowHeight)
+            drawVoteRow(g, category, vote, currentY, width, rowHeight, phase)
             currentY += rowHeight
         }
 
@@ -266,7 +271,7 @@ class ImageService {
         return image
     }
 
-    private fun drawHeader(g: Graphics2D, eventName: String, profile: UserProfile) {
+    private fun drawHeader(g: Graphics2D, eventName: String, profile: UserProfile, phase: String) {
         // Draw Avatar
         profile.avatarUrl?.let { url ->
             try {
@@ -298,7 +303,8 @@ class ImageService {
 
         g.font = Font("SansSerif", Font.PLAIN, 18)
         g.color = Color(180, 180, 180)
-        g.drawString("Minhas indicações - $eventName", 140, 105)
+        val label = if (phase == "VOTING") "Meus votos" else "Minhas indicações"
+        g.drawString("$label - $eventName", 140, 105)
 
         // Separator
         g.color = Color(40, 40, 45)
@@ -311,7 +317,8 @@ class ImageService {
         vote: VoteRequest?,
         y: Int,
         width: Int,
-        rowHeight: Int
+        rowHeight: Int,
+        phase: String
     ) {
         // Category Name
         g.color = Color(150, 150, 255)
@@ -321,7 +328,7 @@ class ImageService {
         // Game Name
         g.color = Color.WHITE
         g.font = Font("SansSerif", Font.BOLD, 22)
-        val gameName = vote?.gameName ?: "Não indicado"
+        val gameName = vote?.gameName ?: if (phase == "VOTING") "Não votado" else "Não indicado"
         g.drawString(gameName, 120, y + 65)
 
         // Cover

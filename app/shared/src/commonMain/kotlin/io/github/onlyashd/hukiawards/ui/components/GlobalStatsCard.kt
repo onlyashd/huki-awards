@@ -1,10 +1,23 @@
 package io.github.onlyashd.hukiawards.ui.components
 
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.ThumbUp
-import androidx.compose.material3.*
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -13,6 +26,7 @@ import androidx.compose.ui.unit.dp
 import io.github.onlyashd.hukiawards.model.GlobalStats
 import io.github.onlyashd.hukiawards.model.Strings
 import io.github.onlyashd.hukiawards.util.colors
+import io.github.onlyashd.hukiawards.util.shapes
 import io.github.onlyashd.hukiawards.util.typography
 
 @Composable
@@ -90,7 +104,7 @@ private fun StatItem(
     Surface(
         modifier = modifier,
         color = colors().surfaceVariant,
-        shape = MaterialTheme.shapes.medium
+        shape = shapes().medium
     ) {
         Row(
             modifier = Modifier.padding(12.dp),

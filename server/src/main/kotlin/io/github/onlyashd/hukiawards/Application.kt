@@ -105,7 +105,7 @@ fun Application.module() {
 
     routing {
         discordRoutes(httpClient)
-        publicRoutes(igdbService, imageService)
+        publicRoutes(httpClient, igdbService, imageService)
     }
 }
 

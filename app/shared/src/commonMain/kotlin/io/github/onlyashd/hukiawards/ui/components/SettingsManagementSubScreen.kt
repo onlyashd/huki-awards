@@ -15,7 +15,6 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.PlainTooltip
 import androidx.compose.material3.Switch
@@ -38,6 +37,8 @@ import io.github.onlyashd.hukiawards.model.Routes
 import io.github.onlyashd.hukiawards.model.Settings
 import io.github.onlyashd.hukiawards.model.Strings
 import io.github.onlyashd.hukiawards.util.AppLogger
+import io.github.onlyashd.hukiawards.util.colors
+import io.github.onlyashd.hukiawards.util.typography
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -66,7 +67,7 @@ fun SettingsManagementSubScreen(
 
     Column(verticalArrangement = Arrangement.spacedBy(24.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(Strings.GLOBAL_SETTINGS, style = MaterialTheme.typography.headlineMedium)
+            Text(Strings.GLOBAL_SETTINGS, style = typography().headlineMedium)
 
             val tooltipState = rememberTooltipState()
             TooltipBox(
@@ -82,7 +83,7 @@ fun SettingsManagementSubScreen(
                     Icon(
                         Icons.Default.Info,
                         contentDescription = "Info",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                        tint = colors().onSurfaceVariant.copy(alpha = 0.5f)
                     )
                 }
             }
@@ -126,8 +127,8 @@ fun SettingsManagementSubScreen(
                         Text(Strings.EVENT_PHASE)
                         Text(
                             text = if (settings?.phase == "NOMINATION") Strings.NOMINATION_PHASE_DESC else Strings.VOTING_PHASE_DESC,
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            style = typography().labelSmall,
+                            color = colors().onSurfaceVariant
                         )
                     }
                     Switch(

@@ -18,7 +18,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -36,6 +35,8 @@ import io.github.onlyashd.hukiawards.client.ApiClient
 import io.github.onlyashd.hukiawards.model.Routes
 import io.github.onlyashd.hukiawards.model.Strings
 import io.github.onlyashd.hukiawards.util.AppLogger
+import io.github.onlyashd.hukiawards.util.colors
+import io.github.onlyashd.hukiawards.util.typography
 import kotlinx.coroutines.launch
 
 @Composable
@@ -70,7 +71,7 @@ fun AdminsManagementSubScreen(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(Strings.MANAGE_ADMINS, style = MaterialTheme.typography.headlineMedium)
+            Text(Strings.MANAGE_ADMINS, style = typography().headlineMedium)
             Button(onClick = { showAddDialog = true }) {
                 Icon(Icons.Default.Add, contentDescription = null)
                 Spacer(modifier = Modifier.width(8.dp))
@@ -88,12 +89,12 @@ fun AdminsManagementSubScreen(
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Column {
-                            Text(username, style = MaterialTheme.typography.bodyLarge)
+                            Text(username, style = typography().bodyLarge)
                             if (isDefault) {
                                 Text(
                                     Strings.DEFAULT_ADMIN,
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.primary
+                                    style = typography().labelSmall,
+                                    color = colors().primary
                                 )
                             }
                         }
@@ -114,7 +115,7 @@ fun AdminsManagementSubScreen(
                                 Icon(
                                     Icons.Default.Delete,
                                     contentDescription = Strings.REMOVE_ADMIN,
-                                    tint = MaterialTheme.colorScheme.error
+                                    tint = colors().error
                                 )
                             }
                         }
