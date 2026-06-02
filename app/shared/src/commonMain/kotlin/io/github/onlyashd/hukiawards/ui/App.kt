@@ -26,11 +26,17 @@ import io.github.onlyashd.hukiawards.util.AppLogger
 import io.github.onlyashd.hukiawards.util.getRoleFromToken
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.DefaultRequest
+import io.ktor.client.plugins.api.createClientPlugin
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.client.plugins.observer.ResponseObserver
 import io.ktor.client.request.header
+import io.ktor.client.statement.HttpResponseContainer
+import io.ktor.client.statement.HttpResponsePipeline
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
+import io.ktor.http.header.AcceptEncoding
 import io.ktor.serialization.kotlinx.json.json
+import io.ktor.utils.io.ByteReadChannel
 import kotlinx.serialization.json.Json
 
 
@@ -64,7 +70,25 @@ fun App(
             install(DefaultRequest) {
                 header(HttpHeaders.Accept, ContentType.Application.Json)
                 header(HttpHeaders.ContentType, ContentType.Application.Json)
+                header(HttpHeaders.AcceptEncoding, AcceptEncoding.Identity)
             }
+
+            install(ResponseObserver) {
+                onResponse { response ->
+                    println("Response status: ${response.status}")
+                }
+            }
+
+            val bypassBrotliPlugin = createClientPlugin("BypassBrotliPlugin") {
+                client.responsePipeline.intercept(HttpResponsePipeline.Receive) { (typeInfo, responseBody) ->
+                    if (responseBody is ByteReadChannel) {
+                        proceedWith(HttpResponseContainer(typeInfo, responseBody))
+                    } else {
+                        proceedWith(subject)
+                    }
+                }
+            }
+            install(bypassBrotliPlugin)
         }
     }
 
