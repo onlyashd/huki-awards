@@ -58,6 +58,7 @@ OS or via a `.env` file (if using a runner that supports it).
 | `DISCORD_CLIENT_SECRET` | Discord Application Client Secret            | `ABC...`                                         |
 | `IGDB_CLIENT_ID`        | Twitch/IGDB Client ID                        | `XYZ...`                                         |
 | `IGDB_CLIENT_SECRET`    | Twitch/IGDB Client Secret                    | `123...`                                         |
+| `DISCORD_WEBHOOK_URL`   | Discord Webhook URL for Sharing              | `https://discord.com/api/webhooks/...`           |
 | `SENTRY_DSN_SERVER`     | (Optional) Sentry DSN for error tracking     | `https://...@...sentry.io/...`                   |
 | `ALLOWED_HOSTS`         | Comma-separated list of allowed CORS origins | `http://localhost:3030,https://my-awards.com`    |
 | `REDIRECT_URL`          | Full URL for the Discord callback            | `https://api.my-awards.com/callback/discord`     |

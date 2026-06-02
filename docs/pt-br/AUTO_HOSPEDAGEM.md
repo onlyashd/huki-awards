@@ -60,6 +60,7 @@ executor que o suporte).
 | `DISCORD_CLIENT_SECRET` | Segredo do cliente do aplicativo Discord               | `ABC...`                                         |
 | `IGDB_CLIENT_ID`        | ID do cliente Twitch/IGDB                              | `XYZ...`                                         |
 | `IGDB_CLIENT_SECRET`    | Segredo do cliente Twitch/IGDB                         | `123...`                                         |
+| `DISCORD_WEBHOOK_URL`   | URL do Webhook do Discord para Compartilhamento        | `https://discord.com/api/webhooks/...`           |
 | `SENTRY_DSN_SERVER`     | (Opcional) DSN do Sentry para rastreamento de erros    | `https://...@...sentry.io/...`                   |
 | `ALLOWED_HOSTS`         | Lista separada por vírgulas de origens CORS permitidas | `http://localhost:3030,https://my-awards.com`    |
 | `REDIRECT_URL`          | URL completa para o callback do Discord                | `https://api.my-awards.com/callback/discord`     |
