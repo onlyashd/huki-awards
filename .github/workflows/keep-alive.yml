@@ -1,0 +1,13 @@
+name: Keep Render Alive
+on:
+  schedule:
+    - cron: '*/14 * * * *'  # every 14 minutes
+  workflow_dispatch:
+
+jobs:
+  ping:
+    if: vars.KEEP_ALIVE_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - run: curl -s https://huki-awards.onrender.com/
+      - run: curl -s https://huki-awards-backend.onrender.com/
