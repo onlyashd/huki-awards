@@ -18,9 +18,9 @@ import io.github.onlyashd.hukiawards.model.Roles
 import io.github.onlyashd.hukiawards.model.Routes.Admin
 import io.github.onlyashd.hukiawards.model.Routes.Admins
 import io.github.onlyashd.hukiawards.model.Routes.Api
-import io.github.onlyashd.hukiawards.model.Routes.Health
 import io.github.onlyashd.hukiawards.model.Routes.CallbackDiscord
 import io.github.onlyashd.hukiawards.model.Routes.Categories
+import io.github.onlyashd.hukiawards.model.Routes.Health
 import io.github.onlyashd.hukiawards.model.Routes.LoginDiscord
 import io.github.onlyashd.hukiawards.model.Routes.Logout
 import io.github.onlyashd.hukiawards.model.Routes.Profile
@@ -69,6 +69,7 @@ import io.ktor.server.response.respondText
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.delete
 import io.ktor.server.routing.get
+import io.ktor.server.routing.head
 import io.ktor.server.routing.intercept
 import io.ktor.server.routing.post
 import io.ktor.server.routing.put
@@ -209,6 +210,9 @@ fun Route.publicRoutes(
     igdbService: IgdbService,
     imageService: ImageService
 ) {
+    head(Health.path) {
+        call.respond(HttpStatusCode.OK, mapOf("status" to "ok"))
+    }
     get(Health.path) {
         call.respond(HttpStatusCode.OK, mapOf("status" to "ok"))
     }
