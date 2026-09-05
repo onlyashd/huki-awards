@@ -159,10 +159,10 @@ fun App(
                     LandingScreen(
                         settings = settings,
                         onGoToLogin = {
-                            if (isLogged) {
-                                currentRoute = "/dashboard"
+                            currentRoute = if (isLogged) {
+                                "/dashboard"
                             } else {
-                                currentRoute = "/login"
+                                "/login"
                             }
                         }
                     )
