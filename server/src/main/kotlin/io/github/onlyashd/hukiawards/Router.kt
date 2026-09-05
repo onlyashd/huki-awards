@@ -18,6 +18,7 @@ import io.github.onlyashd.hukiawards.model.Roles
 import io.github.onlyashd.hukiawards.model.Routes.Admin
 import io.github.onlyashd.hukiawards.model.Routes.Admins
 import io.github.onlyashd.hukiawards.model.Routes.Api
+import io.github.onlyashd.hukiawards.model.Routes.Health
 import io.github.onlyashd.hukiawards.model.Routes.CallbackDiscord
 import io.github.onlyashd.hukiawards.model.Routes.Categories
 import io.github.onlyashd.hukiawards.model.Routes.LoginDiscord
@@ -208,6 +209,10 @@ fun Route.publicRoutes(
     igdbService: IgdbService,
     imageService: ImageService
 ) {
+    get(Health.path) {
+        call.respond(HttpStatusCode.OK, mapOf("status" to "ok"))
+    }
+
     // HTML Landing Page for Sharing (OpenGraph)
     get("${Share.path}/{id}") {
         val idStr = call.parameters["id"] ?: return@get call.respond(HttpStatusCode.BadRequest)

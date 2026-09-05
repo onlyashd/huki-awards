@@ -22,6 +22,11 @@ RUN echo 'server { \
         index index.html; \
         try_files $uri $uri/ /index.html; \
     } \
+    location = /health { \
+        access_log off; \
+        add_header Content-Type application/json; \
+        return 200 '"'"'{"status":"ok"}'"'"'; \
+    } \
     # Ensure wasm files are served with the correct MIME type \
     location ~* \.wasm$ { \
         root /usr/share/nginx/html; \
